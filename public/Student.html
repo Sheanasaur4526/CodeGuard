@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CodeGuard Smart IDE</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+
+        <!-- ✅ ROOM TITLE FIX -->
+        <h2 id="roomTitle">Room: </h2>
+
+        <div class="file-actions">
+            <button>➕ New File</button>
+            <button id="openFileBtn">📂 Open File</button>
+        </div>
+
+        <!-- FILE PANEL -->
+        <div id="filePanel" class="file-panel" style="display:none;">
+
+            <h3>📂 Activity File</h3>
+
+            <div>
+                <h4>Activity</h4>
+                <p id="activityText"></p>
+            </div>
+
+            <div>
+                <h4>Rubric</h4>
+                <pre id="rubricText"></pre>
+            </div>
+
+            <button onclick="closeFile()">Close</button>
+
+        </div>
+    </div>
+
+    <!-- MAIN AREA -->
+    <div class="main">
+
+        <!-- TOP BAR -->
+        <div class="topbar">
+
+            <div>
+                <h3 id="studentName"></h3>
+            </div>
+
+            <div class="logo">
+                <img src="codeguard.png" alt="CodeGuard Logo" class="logo-img">
+                <h2 style="color: white;">CodeGuard</h2>
+            </div>
+
+            <div class="actions">
+                <button>Run ▶</button>
+                <button>Save 💾</button>
+                <button>Settings ⚙</button>
+                <button>Submit 📤</button>
+            </div>
+
+        </div>
+
+        <!-- EDITOR -->
+        <div class="editor-wrapper">
+
+            <div class="line-numbers" id="lineNumbers">1</div>
+
+            <textarea
+                class="editor"
+                id="codeEditor"
+                placeholder="Write your code here..."
+                spellcheck="false"
+            ></textarea>
+
+        </div>
+
+        <!-- TERMINAL -->
+        <div class="terminal">
+            <div class="terminal-header">🖥 Terminal</div>
+            <div class="terminal-body">
+                <p>> Ready...</p>
+            </div>
+        </div>
+
+        <!-- VIOLATION MONITOR -->
+<div class="violation-panel">
+
+    <div class="violation-header">
+        🚨 Monitoring
+    </div>
+
+    <div class="violation-body">
+
+        <p>
+            Tab Switches:
+            <span id="tabCount">0</span>
+        </p>
+
+        <p>
+            Alt+Tab / Focus Loss:
+            <span id="focusCount">0</span>
+        </p>
+
+
+
+    </div>
+
+</div>
+
+    </div>
+</div>
+
+<!-- ✅ SCRIPT ALWAYS AT BOTTOM -->
+<script type="module" src="student.js"></script>
+
+</body>
+</html>
