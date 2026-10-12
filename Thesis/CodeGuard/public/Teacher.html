@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeGuard Teacher Dashboard</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="dashboard">
+
+    <!-- ================= SIDEBAR ================= -->
+
+    <aside class="sidebar">
+
+        <div class="logo">
+            <img src="codeguard.png" class="logo-img" alt="CodeGuard Logo">
+            <h2>CodeGuard</h2>
+        </div>
+
+        <ul>
+            <li onclick="showDashboard()">📊 Dashboard</li>
+            <li onclick="showCreateRoom()">➕ Create Room</li>
+            <li onclick="showRooms()">🏫 Rooms</li>
+            <li>📁 Activities</li>
+            <li>📤 Submissions</li>
+        </ul>
+
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+
+    <main class="main">
+
+        <div class="topbar">
+            <h1 id="pageTitle">Teacher Dashboard</h1>
+        </div>
+
+        <!-- ================= DASHBOARD PAGE ================= -->
+
+        <div id="dashboardPage">
+
+            <div class="grid">
+
+                <div class="card">
+                    <h2>Create Activity</h2>
+
+                    <textarea
+                        id="activityInput"
+                        placeholder="Enter activity instructions..."
+                    ></textarea>
+
+                    <button>Add Activity</button>
+                </div>
+
+                <div class="card">
+
+                    <h2>Rubrics</h2>
+
+                    <input id="rubric1" placeholder="Correctness">
+                    <input id="rubric2" placeholder="Code Quality">
+                    <input id="rubric3" placeholder="Efficiency">
+                    <input id="rubric4" placeholder="Style">
+
+                    <button>Save Rubric</button>
+
+                </div>
+
+                <div class="card">
+
+                    <h2>Live Submissions</h2>
+
+                    <div class="submission-box">
+                        Student submissions will appear here...
+                    </div>
+
+                </div>
+
+                <div class="card">
+
+                    <h2>Test Cases</h2>
+
+                    <textarea
+                        id="sampleCodeInput"
+                        placeholder="Paste Test Cases..."
+                    ></textarea>
+
+                    <button>Save</button>
+
+                </div>
+
+                <div class="card create-room">
+
+                    <h2>Create Room</h2>
+
+                    <textarea
+                        id="roomCode"
+                        readonly
+                        placeholder="Generated room code..."
+                    ></textarea>
+
+                    <input
+                        id="roomTitle"
+                        placeholder="Room Title"
+                    >
+
+                    <button onclick="generateRoomCode()">
+                        Generate Room Code
+                    </button>
+
+                    <button onclick="saveRoom()">
+                        Create Room
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ================= ROOMS PAGE ================= -->
+
+        <div id="roomsPage" style="display:none;">
+
+            <div class="card">
+
+                <h2>My Rooms</h2>
+
+                <div id="roomList">
+
+                    <!-- Loaded from Firebase -->
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ================= ROOM DASHBOARD ================= -->
+
+        <div id="roomDashboard" style="display:none;">
+
+            <button onclick="backToRooms()">
+                ← Back to Rooms
+            </button>
+
+            <h1 id="selectedRoomTitle"></h1>
+
+            <div class="grid">
+
+                <div class="card">
+
+                    <h2>Activity</h2>
+
+                    <div id="activityDetails">
+                        No activity available.
+                    </div>
+
+                </div>
+
+                <div class="card">
+
+                    <h2>Sample Code</h2>
+
+                    <pre id="sampleCodeDetails">
+No sample code.
+                    </pre>
+
+                </div>
+
+                <div class="card">
+
+                    <h2>Rubrics</h2>
+
+                    <div id="rubricDetails">
+
+                        <p>Correctness: -</p>
+                        <p>Code Quality: -</p>
+                        <p>Efficiency: -</p>
+                        <p>Style: -</p>
+
+                    </div>
+
+                </div>
+
+                <div class="card">
+
+                    <h2>Students</h2>
+
+                    <div id="studentList">
+                        No students have joined this room.
+                    </div>
+
+                </div>
+
+                <div class="card">
+
+                    <h2>Submissions</h2>
+
+                    <div id="submissionList">
+                        No submissions yet.
+                    </div>
+
+                </div>
+
+                <div class="card">
+
+                    <h2>Violations</h2>
+
+                    <div id="violationList">
+                        No violations yet.
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+</div>
+
+<script type="module" src="teacher.js"></script>
+
+</body>
+</html>
