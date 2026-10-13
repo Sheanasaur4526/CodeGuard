@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CodeGuard | Teacher Login</title>
+<style>
+/* RESET (same as your existing CSS) */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    background: #0f172a;
+    color: white;
+    overflow: hidden;
+}
+
+/* PAGE */
+.login-page {
+    position: relative;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #0f172a 55%, #111827 100%);
+}
+
+/* TOP BAR */
+.login-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 30px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.brand span,
+.card-title span {
+    color: #3b82f6;
+}
+
+.tagline {
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+/* DECORATION */
+.deco-code {
+    position: absolute;
+    left: 8%;
+    top: 40%;
+    font-size: 140px;
+    font-weight: bold;
+    color: #1e293b;
+    user-select: none;
+}
+
+.deco-editor {
+    position: absolute;
+    right: -40px;
+    top: 38%;
+    width: 220px;
+    height: 180px;
+    background: #111827;
+    border: 2px solid #1e293b;
+    border-radius: 10px;
+    padding: 15px;
+}
+
+.deco-editor i {
+    display: block;
+    height: 6px;
+    margin-bottom: 14px;
+    border-radius: 3px;
+    background: #1e293b;
+}
+
+.deco-editor i:nth-child(2) { width: 80%; background: #1d4ed8; }
+.deco-editor i:nth-child(3) { width: 60%; }
+.deco-editor i:nth-child(4) { width: 70%; background: #1d4ed8; }
+
+/* LOGIN CARD */
+.login-card {
+    position: relative;
+    width: 100%;
+    max-width: 380px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 35px 30px;
+    text-align: center;
+}
+
+.login-card .shield {
+    width: 70px;
+    height: 70px;
+    margin-bottom: 10px;
+}
+
+.card-title {
+    font-size: 26px;
+    font-weight: bold;
+}
+
+.card-subtitle {
+    margin-top: 10px;
+    font-size: 20px;
+}
+
+.card-desc {
+    margin: 15px 0 25px;
+    font-size: 13px;
+    color: #cbd5e1;
+    line-height: 1.5;
+}
+
+/* GOOGLE BUTTON */
+.google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    margin-top: 0;
+    padding: 12px;
+    background: #f8fafc;
+    color: #1f2937;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.google-btn:hover {
+    background: #e2e8f0;
+}
+
+.google-btn:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+.google-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* NOTICE & ERROR */
+.notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 25px;
+    text-align: left;
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+
+.notice svg {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    margin-top: 1px;
+}
+
+.error {
+    display: none;
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 6px;
+    background: #450a0a;
+    color: #fca5a5;
+    font-size: 13px;
+}
+
+
+@media (max-width: 768px) {
+    .deco-code, .deco-editor { display: none; }
+}
+
+@media (max-width: 480px) {
+    .login-top { flex-direction: column; gap: 5px; }
+    .login-card { padding: 30px 20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="login-page">
+
+    <div class="login-top">
+        <div class="brand">
+            <svg width="30" height="30" viewBox="0 0 64 64" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+                <path d="M32 4 8 13v17c0 15 10 26 24 30 14-4 24-15 24-30V13L32 4Z"/>
+                <path d="m26 25-7 7 7 7M38 25l7 7-7 7M34 24l-4 16"/>
+            </svg>
+            Code<span>Guard</span>
+        </div>
+        <div class="tagline">Better Code. Fairer Grades.</div>
+    </div>
+
+    <div class="deco-code">&lt;/&gt;</div>
+    <div class="deco-editor"><i></i><i></i><i></i><i></i></div>
+
+    <div class="login-card">
+        <svg class="shield" viewBox="0 0 64 64" fill="none" stroke="#3b82f6" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round">
+            <path d="M32 4 8 13v17c0 15 10 26 24 30 14-4 24-15 24-30V13L32 4Z"/>
+            <path d="m26 25-7 7 7 7M38 25l7 7-7 7M34 24l-4 16"/>
+        </svg>
+
+        <h1 class="card-title">Code<span>Guard</span></h1>
+        <h2 class="card-subtitle">Teacher Login</h2>
+        <p class="card-desc">Sign in with your Google account to access the teacher dashboard.</p>
+
+       <button class="google-btn" id="googleLoginBtn" type="button">
+            <svg viewBox="0 0 48 48">
+                <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                <path fill="#34A853" d="M24 48c6.500 0 11.900-2.100 15.900-5.800l-7.600-5.900c-2.100 1.400-4.900 2.300-8.300 2.300-6.300 0-11.600-4.100-13.500-9.800l-7.900 6.100C6.500 42.600 14.600 48 24 48z"/>
+            </svg>
+            Sign in with Google
+        </button>
+        <div class="error" id="loginError"></div>
+
+        <div class="notice">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round">
+                <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+            </svg>
+            <span>Only registered and approved teachers can access the teacher dashboard.</span>
+        </div>
+    </div>
+
+</div>
+
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import {
+    getAuth,
+    GoogleAuthProvider,
+    signInWithPopup
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB9_PHYI-qLa16-J2lUkeDzxw77nLX5QuE",
+  authDomain: "codeguard-e4c3f.firebaseapp.com",
+  projectId: "codeguard-e4c3f",
+  storageBucket: "codeguard-e4c3f.firebasestorage.app",
+  messagingSenderId: "718130075597",
+  appId: "1:718130075597:web:1ce6976c70e56e43105684",
+  measurementId: "G-682PTK8HPP"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+const button = document.getElementById("googleLoginBtn");
+const errorBox = document.getElementById("loginError");
+
+button.addEventListener("click", async () => {
+    button.disabled = true;
+    errorBox.style.display = "none";
+
+    try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+
+        console.log("Google login successful:", user.email);
+
+        // Change this to your actual teacher dashboard filename.
+        window.location.href = "Teacher.html";
+
+    } catch (error) {
+        console.error("Firebase login error:", error.code, error.message);
+
+        errorBox.textContent =
+            error.code + ": " + error.message;
+        errorBox.style.display = "block";
+
+    } finally {
+        button.disabled = false;
+    }
+});
+</script>
+
+</body>
+</html>
