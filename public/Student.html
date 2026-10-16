@@ -1,121 +1,229 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#080f1e">
+
     <title>CodeGuard Smart IDE</title>
+
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-
 <div class="container">
 
-    <!-- Sidebar -->
-    <div class="sidebar">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
 
-        <!-- ✅ ROOM TITLE FIX -->
-        <h2 id="roomTitle">Room: </h2>
+        <div class="room-header">
+            <h2 id="roomTitle">Room:</h2>
+        </div>
 
         <div class="file-actions">
-            <button>➕ New File</button>
-            <button id="openFileBtn">📂 Open File</button>
+            <button id="newFileBtn" class="btn btn-primary">
+                + New File
+            </button>
+
+            <button id="openFileBtn" class="btn btn-secondary">
+                📂 Open File
+            </button>
+
+            <input
+                type="file"
+                id="fileInput"
+                accept=".c,.h,.txt"
+                hidden
+            >
         </div>
 
-        <!-- FILE PANEL -->
-        <div id="filePanel" class="file-panel" style="display:none;">
+        <!-- ACTIVITY FILE -->
+        <section id="filePanel" class="file-panel">
 
-            <h3>📂 Activity File</h3>
-
-            <div>
-                <h4>Activity</h4>
-                <p id="activityText"></p>
+            <div class="panel-heading">
+                <h3>📁 Activity File</h3>
             </div>
 
-            <div>
-                <h4>Rubric</h4>
-                <pre id="rubricText"></pre>
+            <div class="panel-content">
+
+                <h4>Activity Instructions</h4>
+                <p id="activityText">
+                    Your assigned programming activity will appear here.
+                </p>
+
+                <h4>Grading Rubric</h4>
+                <pre id="rubricText">Correctness   - 40%
+Code Quality  - 20%
+Efficiency    - 20%
+Style         - 20%
+Total         - 100%</pre>
+
             </div>
 
-            <button onclick="closeFile()">Close</button>
+            <button
+                id="closeFileBtn"
+                class="btn btn-secondary close-btn"
+            >
+                Close
+            </button>
 
-        </div>
-    </div>
+        </section>
 
-    <!-- MAIN AREA -->
-    <div class="main">
+    </aside>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="main">
 
         <!-- TOP BAR -->
-        <div class="topbar">
+        <header class="topbar">
 
-            <div>
-                <h3 id="studentName"></h3>
+            <div class="brand">
+                <img
+                    src="codeguard.png"
+                    alt="CodeGuard Logo"
+                    class="logo-img"
+                >
+
+                <div>
+                    <h1>CodeGuard</h1>
+                    <span>Smart IDE · C Programming</span>
+                </div>
             </div>
 
-            <div class="logo">
-                <img src="codeguard.png" alt="CodeGuard Logo" class="logo-img">
-                <h2 style="color: white;">CodeGuard</h2>
+            <div class="student-info">
+                <span class="student-icon">●</span>
+
+                <div>
+                    <strong id="studentName">Student</strong>
+                    <small>Student Workspace</small>
+                </div>
             </div>
 
+            <!-- ACTION BUTTONS -->
             <div class="actions">
-                <button>Run ▶</button>
-                <button>Save 💾</button>
-                <button>Settings ⚙</button>
-                <button>Submit 📤</button>
+
+                <button id="runBtn" class="btn btn-run">
+                    ▶ Run
+                </button>
+
+                <button id="saveBtn" class="btn btn-save">
+                    💾 Save
+                </button>
+
+                <button id="settingsBtn" class="btn btn-secondary">
+                    ⚙ Settings
+                </button>
+
+                <button id="submitBtn" class="btn btn-submit">
+                    ↑ Submit
+                </button>
+
             </div>
 
-        </div>
+        </header>
 
-        <!-- EDITOR -->
-        <div class="editor-wrapper">
+        <!-- CODE EDITOR -->
+        <section class="editor-card">
 
-            <div class="line-numbers" id="lineNumbers">1</div>
+            <div class="editor-tabs">
+                <div class="editor-tab">
+                    <span>‹/›</span>
+                    <span id="fileName">main.c</span>
+                </div>
 
-            <textarea
-                class="editor"
-                id="codeEditor"
-                placeholder="Write your code here..."
-                spellcheck="false"
-            ></textarea>
-
-        </div>
-
-        <!-- TERMINAL -->
-        <div class="terminal">
-            <div class="terminal-header">🖥 Terminal</div>
-            <div class="terminal-body">
-                <p>> Ready...</p>
+                <span class="language-label">C</span>
             </div>
-        </div>
 
-        <!-- VIOLATION MONITOR -->
-<div class="violation-panel">
+            <div class="editor-wrapper">
 
-    <div class="violation-header">
-        🚨 Monitoring
-    </div>
+                <div
+                    class="line-numbers"
+                    id="lineNumbers"
+                    aria-hidden="true"
+                >1</div>
 
-    <div class="violation-body">
+                <textarea
+                    class="editor"
+                    id="codeEditor"
+                    placeholder="Write your C code here..."
+                    aria-label="C code editor"
+                    spellcheck="false"
+                    autocomplete="off"
+                    autocapitalize="off"
+                    autocorrect="off"
+                ></textarea>
 
-        <p>
-            Tab Switches:
-            <span id="tabCount">0</span>
-        </p>
+            </div>
 
-        <p>
-            Alt+Tab / Focus Loss:
-            <span id="focusCount">0</span>
-        </p>
+            <footer class="editor-footer">
+                <span>● Ready</span>
+                <span>UTF-8 · C</span>
+            </footer>
 
+        </section>
 
+        <!-- TERMINAL AND MONITORING -->
+        <section class="bottom-panels">
 
-    </div>
+            <!-- TERMINAL -->
+            <div class="terminal panel">
+
+                <div class="panel-heading">
+                    <h3>▣ Terminal / Output</h3>
+
+                    <button
+                        id="clearTerminalBtn"
+                        class="icon-btn"
+                        type="button"
+                    >
+                        Clear
+                    </button>
+                </div>
+
+                <div
+                    class="terminal-body"
+                    id="terminalOutput"
+                    role="log"
+                    aria-live="polite"
+                >
+                    <p class="terminal-muted">
+                        &gt; Ready...
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- VIOLATION MONITOR -->
+            <div class="violation-panel panel">
+
+                <div class="panel-heading monitoring-heading">
+                    <h3>⚠ Monitoring</h3>
+                </div>
+
+                <div class="violation-body">
+
+                    <div class="monitor-item">
+                        <span>Tab Switches</span>
+                        <strong id="tabCount">0</strong>
+                    </div>
+
+                    <div class="monitor-item">
+                        <span>Alt+Tab / Focus Loss</span>
+                        <strong id="focusCount">0</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
 
 </div>
 
-    </div>
-</div>
-
-<!-- ✅ SCRIPT ALWAYS AT BOTTOM -->
+<!-- KEEP YOUR EXISTING FIREBASE / IDE SCRIPT -->
 <script type="module" src="student.js"></script>
 
 </body>

@@ -17,8 +17,8 @@
         <h2 id="roomTitle">Room: </h2>
 
         <div class="file-actions">
-            <button>➕ New File</button>
-            <button id="openFileBtn">📂 Open File</button>
+            <button id="newFileBtn" type="button">➕ New File</button>
+<button id="openFileBtn" type="button">📂 Open File</button>
         </div>
 
         <!-- FILE PANEL -->
@@ -57,11 +57,11 @@
             </div>
 
             <div class="actions">
-                <button>Run ▶</button>
-                <button>Save 💾</button>
-                <button>Settings ⚙</button>
-                <button>Submit 📤</button>
-            </div>
+    <button id="runBtn" type="button">Run ▶</button>
+    <button id="saveBtn" type="button">Save 💾</button>
+    <button id="settingsBtn" type="button">Settings ⚙</button>
+    <button id="submitBtn" type="button">Submit 📤</button>
+</div>
 
         </div>
 
@@ -81,11 +81,13 @@
 
         <!-- TERMINAL -->
         <div class="terminal">
-            <div class="terminal-header">🖥 Terminal</div>
-            <div class="terminal-body">
-                <p>> Ready...</p>
-            </div>
-        </div>
+    <div class="terminal-header">
+        🖥 Terminal
+        <button id="clearTerminalBtn" type="button">Clear</button>
+    </div>
+
+    <pre class="terminal-body" id="terminalOutput">Ready...</pre>
+</div>
 
         <!-- VIOLATION MONITOR -->
 <div class="violation-panel">
@@ -117,6 +119,7 @@
 
 <!-- ✅ SCRIPT ALWAYS AT BOTTOM -->
 <script type="module" src="student.js"></script>
+
 
 </body>
 </html>
