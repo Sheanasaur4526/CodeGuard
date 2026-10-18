@@ -1,8 +1,10 @@
+
 console.log("Teacher JS Loaded");
 
 /* =========================
    FIREBASE IMPORTS
 ========================= */
+
 import { db, auth } from "./firebase.js";
 
 import {
@@ -19,7 +21,12 @@ import {
     onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
+/* =========================
+   GLOBAL VARIABLES
+========================= */
+
 let violationListener = null;
+let studentListener = null;
 
 let currentRoom = null;
 
@@ -28,43 +35,59 @@ let currentRoom = null;
 ========================= */
 
 window.showDashboard = function () {
+    stopRoomListeners();
 
-    document.getElementById("pageTitle").innerText = "Teacher Dashboard";
+    document.getElementById("pageTitle").textContent =
+        "Teacher Dashboard";
 
     document.getElementById("dashboardPage").style.display = "block";
     document.getElementById("roomsPage").style.display = "none";
     document.getElementById("roomDashboard").style.display = "none";
-
 };
 
 window.showCreateRoom = function () {
+    stopRoomListeners();
 
-    document.getElementById("pageTitle").innerText = "Create Room";
+    document.getElementById("pageTitle").textContent = "Create Room";
 
     document.getElementById("dashboardPage").style.display = "block";
     document.getElementById("roomsPage").style.display = "none";
     document.getElementById("roomDashboard").style.display = "none";
-
 };
 
 window.showRooms = async function () {
+    stopRoomListeners();
 
-    document.getElementById("pageTitle").innerText = "My Rooms";
+    document.getElementById("pageTitle").textContent = "My Rooms";
 
     document.getElementById("dashboardPage").style.display = "none";
     document.getElementById("roomDashboard").style.display = "none";
     document.getElementById("roomsPage").style.display = "block";
 
     await loadRooms();
-
 };
+
+/* =========================
+   STOP ROOM LISTENERS
+========================= */
+
+function stopRoomListeners() {
+    if (violationListener) {
+        violationListener();
+        violationListener = null;
+    }
+
+    if (studentListener) {
+        studentListener();
+        studentListener = null;
+    }
+}
 
 /* =========================
    GET CURRENT TEACHER
 ========================= */
 
 function getTeacher() {
-
     const user = auth.currentUser;
 
     if (!user) {
@@ -80,7 +103,6 @@ function getTeacher() {
 ========================= */
 
 window.generateRoomCode = function () {
-
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let code = "";
 
@@ -96,12 +118,15 @@ window.generateRoomCode = function () {
 ========================= */
 
 window.saveRoom = async function () {
-
     const teacher = getTeacher();
     if (!teacher) return;
 
-    const roomCode = document.getElementById("roomCode").value;
-    const roomTitle = document.getElementById("roomTitle").value;
+    const roomCode = document.getElementById("roomCode")
+        .value.trim().toUpperCase();
+
+    const roomTitle = document.getElementById("roomTitle")
+        .value.trim();
+
     const activity = document.getElementById("activityInput").value;
     const sampleCode = document.getElementById("sampleCodeInput").value;
 
@@ -123,22 +148,15 @@ window.saveRoom = async function () {
     }
 
     try {
-
         await addDoc(collection(db, "rooms"), {
-
             teacherId: teacher.uid,
-            teacherEmail: teacher.email,
-
+            teacherEmail: teacher.email || "",
             roomCode,
             roomTitle,
-
             activity,
             sampleCode,
-
             rubric,
-
             createdAt: serverTimestamp()
-
         });
 
         alert("Room created successfully!");
@@ -152,15 +170,12 @@ window.saveRoom = async function () {
         document.getElementById("rubric3").value = "";
         document.getElementById("rubric4").value = "";
 
-        loadRooms();
+        await loadRooms();
 
-    } catch (err) {
-
-        console.error(err);
-        alert("Failed to save room.");
-
+    } catch (error) {
+        console.error("Failed to save room:", error);
+        alert("Failed to save room. Check the console.");
     }
-
 };
 
 /* =========================
@@ -168,75 +183,74 @@ window.saveRoom = async function () {
 ========================= */
 
 async function loadRooms() {
-
     const teacher = getTeacher();
     if (!teacher) return;
 
     const roomList = document.getElementById("roomList");
-
-    roomList.innerHTML = "Loading rooms...";
+    roomList.textContent = "Loading rooms...";
 
     try {
-
         const q = query(
             collection(db, "rooms"),
             where("teacherId", "==", teacher.uid)
         );
 
         const snapshot = await getDocs(q);
-
-        roomList.innerHTML = "";
+        roomList.replaceChildren();
 
         if (snapshot.empty) {
-
-            roomList.innerHTML = `
-                <div class="card">
-                    <h3>No rooms yet.</h3>
-                </div>
-            `;
-
+            const message = document.createElement("p");
+            message.textContent = "No rooms yet.";
+            roomList.appendChild(message);
             return;
         }
-snapshot.forEach(docSnap => {
 
-    const room = docSnap.data();
+        snapshot.forEach((roomDoc) => {
+            const room = roomDoc.data();
 
-    roomList.innerHTML += `
-        <div class="room-item">
+            const item = document.createElement("div");
+            item.className = "room-item";
 
-            <div class="room-info"
-                 onclick="openRoom('${docSnap.id}')">
+            const info = document.createElement("div");
+            info.className = "room-info";
 
-                <h3>${room.roomTitle}</h3>
-                <p><strong>Room Code:</strong> ${room.roomCode}</p>
+            const title = document.createElement("h3");
+            title.textContent = room.roomTitle || "Untitled Room";
 
-            </div>
+            const code = document.createElement("p");
+            code.textContent = "Room Code: " + (room.roomCode || "");
 
-            <div class="room-actions">
+            info.append(title, code);
+            info.addEventListener("click", () => {
+                window.openRoom(roomDoc.id);
+            });
 
-                <button class="open-btn"
-                    onclick="event.stopPropagation(); openRoom('${docSnap.id}')">
-                    Open
-                </button>
+            const actions = document.createElement("div");
+            actions.className = "room-actions";
 
-                <button class="delete-btn"
-                    onclick="event.stopPropagation(); deleteRoom('${docSnap.id}')">
-                    Delete
-                </button>
+            const openButton = document.createElement("button");
+            openButton.className = "open-btn";
+            openButton.textContent = "Open";
+            openButton.addEventListener("click", () => {
+                window.openRoom(roomDoc.id);
+            });
 
-            </div>
+            const deleteButton = document.createElement("button");
+            deleteButton.className = "delete-btn";
+            deleteButton.textContent = "Delete";
+            deleteButton.addEventListener("click", () => {
+                window.deleteRoom(roomDoc.id);
+            });
 
-        </div>
-    `;
+            actions.append(openButton, deleteButton);
+            item.append(info, actions);
+            roomList.appendChild(item);
+        });
 
-});
-    } catch (err) {
-
-        console.error(err);
-        roomList.innerHTML = "Failed to load rooms.";
-
+    } catch (error) {
+        console.error("Failed to load rooms:", error);
+        roomList.textContent = "Failed to load rooms.";
     }
-
 }
 
 /* =========================
@@ -244,8 +258,8 @@ snapshot.forEach(docSnap => {
 ========================= */
 
 window.openRoom = async function (roomId) {
-
     try {
+        stopRoomListeners();
 
         const roomRef = doc(db, "rooms", roomId);
         const roomSnap = await getDoc(roomRef);
@@ -265,49 +279,133 @@ window.openRoom = async function (roomId) {
         document.getElementById("roomDashboard").style.display = "block";
 
         document.getElementById("pageTitle").textContent =
-            currentRoom.roomTitle;
+            currentRoom.roomTitle || "Room Dashboard";
 
         document.getElementById("selectedRoomTitle").textContent =
-            currentRoom.roomTitle;
+            currentRoom.roomTitle || "Untitled Room";
 
-        document.getElementById("activityDetails").innerHTML =
+        document.getElementById("activityDetails").textContent =
             currentRoom.activity || "No activity available.";
 
         document.getElementById("sampleCodeDetails").textContent =
             currentRoom.sampleCode || "No sample code.";
 
-        document.getElementById("rubricDetails").innerHTML = `
-            <p><strong>Correctness:</strong> ${currentRoom.rubric?.correctness || "-"}</p>
-            <p><strong>Code Quality:</strong> ${currentRoom.rubric?.codeQuality || "-"}</p>
-            <p><strong>Efficiency:</strong> ${currentRoom.rubric?.efficiency || "-"}</p>
-            <p><strong>Style:</strong> ${currentRoom.rubric?.style || "-"}</p>
-        `;
+        const rubricDetails = document.getElementById("rubricDetails");
+        rubricDetails.replaceChildren();
 
-        await loadViolations(currentRoom.roomCode);
+        const rubric = currentRoom.rubric || {};
+
+        [
+            ["Correctness", rubric.correctness],
+            ["Code Quality", rubric.codeQuality],
+            ["Efficiency", rubric.efficiency],
+            ["Style", rubric.style]
+        ].forEach(([label, value]) => {
+            const p = document.createElement("p");
+            const strong = document.createElement("strong");
+
+            strong.textContent = label + ": ";
+            p.append(strong, document.createTextNode(value || "-"));
+            rubricDetails.appendChild(p);
+        });
+
+        loadStudents(currentRoom.roomCode);
+        loadViolations(currentRoom.roomCode);
 
     } catch (error) {
+        console.error("Failed to open room:", error);
+        alert("Failed to open room. Check the console.");
+    }
+};
 
-        console.error(error);
-        alert("Failed to open room.");
+/* =========================
+   LOAD STUDENTS IN ROOM
+   Expected collection: roomStudents
+   Expected fields: roomCode, username/name
+========================= */
 
+function loadStudents(roomCode) {
+    const studentList = document.getElementById("studentList");
+
+    if (!studentList) return;
+
+    if (studentListener) {
+        studentListener();
+        studentListener = null;
     }
 
+    if (!roomCode) {
+        studentList.textContent = "This room has no room code.";
+        return;
+    }
 
-};
+    studentList.textContent = "Loading students...";
+
+    const q = query(
+        collection(db, "roomStudents"),
+        where("roomCode", "==", roomCode)
+    );
+
+    studentListener = onSnapshot(
+        q,
+        (snapshot) => {
+            studentList.replaceChildren();
+
+            if (snapshot.empty) {
+                studentList.textContent =
+                    "No students have joined this room.";
+                return;
+            }
+
+            snapshot.forEach((studentDoc) => {
+                const student = studentDoc.data();
+
+                const item = document.createElement("div");
+                item.className = "student-item";
+
+                const name = document.createElement("strong");
+                name.textContent =
+                    student.username ||
+                    student.name ||
+                    "Unnamed Student";
+
+                item.appendChild(name);
+
+                // Optional: show when the student joined
+                if (student.joinedAt?.toDate) {
+                    const joined = document.createElement("small");
+                    joined.textContent =
+                        "Joined: " +
+                        student.joinedAt.toDate().toLocaleString();
+
+                    joined.style.display = "block";
+                    joined.style.color = "#999";
+                    item.appendChild(joined);
+                }
+
+                studentList.appendChild(item);
+            });
+        },
+        (error) => {
+            console.error("Failed to load students:", error);
+            studentList.textContent =
+                "Unable to load students. Check Firestore permissions and collection fields.";
+        }
+    );
+}
 
 /* =========================
    LOAD VIOLATIONS
 ========================= */
 
-async function loadViolations(roomCode) {
-
+function loadViolations(roomCode) {
     const violationList = document.getElementById("violationList");
 
     if (!violationList) return;
 
-    // Remove previous listener if one exists
     if (violationListener) {
         violationListener();
+        violationListener = null;
     }
 
     const q = query(
@@ -316,63 +414,61 @@ async function loadViolations(roomCode) {
         orderBy("timestamp", "desc")
     );
 
-    violationListener = onSnapshot(q, (snapshot) => {
+    violationListener = onSnapshot(
+        q,
+        (snapshot) => {
+            violationList.replaceChildren();
 
-        if (snapshot.empty) {
-            violationList.innerHTML = "<p>No violations found.</p>";
-            return;
+            if (snapshot.empty) {
+                violationList.textContent = "No violations found.";
+                return;
+            }
+
+            snapshot.forEach((violationDoc) => {
+                const v = violationDoc.data();
+
+                const card = document.createElement("div");
+                card.className = "card";
+                card.style.marginBottom = "12px";
+
+                const heading = document.createElement("h3");
+                heading.textContent = v.username || "Unknown Student";
+
+                const type = document.createElement("p");
+                type.textContent =
+                    "Violation: " + (v.violationType || "Unspecified");
+
+                const time = document.createElement("p");
+                time.textContent =
+                    "Time: " +
+                    (v.timestamp?.toDate
+                        ? v.timestamp.toDate().toLocaleString()
+                        : "Unknown");
+
+                card.append(heading, type, time);
+                violationList.appendChild(card);
+            });
+        },
+        (error) => {
+            console.error("Failed to load violations:", error);
+            violationList.textContent = "Failed to load violations.";
         }
-
-        let html = "";
-
-        snapshot.forEach(docSnap => {
-
-            const v = docSnap.data();
-
-            html += `
-    <div class="card" style="margin-bottom:12px">
-        <h3>${v.username}</h3>
-
-        <p>
-            <strong>Violation:</strong>
-            ${v.violationType}
-        </p>
-
-        <p>
-            <strong>Time:</strong>
-            ${v.timestamp
-                ? v.timestamp.toDate().toLocaleString()
-                : ""}
-        </p>
-    </div>
-`;
-
-        });
-
-        violationList.innerHTML = html;
-
-    }, (error) => {
-
-        console.error(error);
-        violationList.innerHTML = "Failed to load violations.";
-
-    });
-
-
+    );
 }
 
+/* =========================
+   BACK TO ROOMS
+========================= */
+
 window.backToRooms = function () {
+    stopRoomListeners();
 
     document.getElementById("roomDashboard").style.display = "none";
     document.getElementById("roomsPage").style.display = "block";
 
     document.getElementById("pageTitle").textContent = "My Rooms";
 
-    if (violationListener) {
-    violationListener();
-    violationListener = null;
-}
-
+    currentRoom = null;
 };
 
 /* =========================
@@ -380,7 +476,6 @@ window.backToRooms = function () {
 ========================= */
 
 window.deleteRoom = async function (roomId) {
-
     const confirmed = confirm(
         "Are you sure you want to delete this room?"
     );
@@ -388,18 +483,22 @@ window.deleteRoom = async function (roomId) {
     if (!confirmed) return;
 
     try {
-
         await deleteDoc(doc(db, "rooms", roomId));
 
-        alert("Room deleted successfully.");
+        if (currentRoom?.id === roomId) {
+            stopRoomListeners();
+            currentRoom = null;
 
-        loadRooms();
+            document.getElementById("roomDashboard").style.display = "none";
+            document.getElementById("roomsPage").style.display = "block";
+            document.getElementById("pageTitle").textContent = "My Rooms";
+        }
+
+        alert("Room deleted successfully.");
+        await loadRooms();
 
     } catch (error) {
-
-        console.error(error);
+        console.error("Failed to delete room:", error);
         alert("Failed to delete room.");
-
     }
-
 };
