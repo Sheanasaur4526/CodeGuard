@@ -2,6 +2,7 @@
 console.log("CodeGuard student.js loaded");
 
 import { db } from "./firebase.js";
+import { runLiveProgram } from "./live-terminal.js";
 
 import {
     collection,
@@ -16,8 +17,8 @@ import {
 // CONFIGURATION
 // ==================================================
 
+// C compiler service (see compiler-service/). Change to your server's HTTPS URL when deployed.
 const COMPILER_API = "https://codeguard-wsx7.onrender.com/execute";
-
 
 // Free hosts (e.g. Render) put the service to sleep when idle. Ping it as
 // soon as the page opens so it is awake by the time the student clicks Run.
@@ -394,10 +395,17 @@ if (saveBtn) {
 // ==================================================
 
 const runBtn = $("runBtn");
+let liveRun = null;
 
 if (runBtn) {
-    runBtn.addEventListener("click", async () => {
-        if (isRunning || !editor) return;
+    runBtn.addEventListener("click", () => {
+        // While a program is running the button acts as a Stop button.
+        if (isRunning && liveRun) {
+            liveRun.stop();
+            return;
+        }
+
+        if (!editor) return;
 
         const sourceCode = editor.value.trim();
 
@@ -408,110 +416,24 @@ if (runBtn) {
 
         if (!COMPILER_API) {
             writeTerminal("C compiler is not configured yet.", "error");
-            writeTerminal(
-                "Configure a secured compiler backend to enable Run."
-            );
             return;
         }
 
         isRunning = true;
-        runBtn.disabled = true;
-        runBtn.textContent = "⏳ Running...";
+        runBtn.textContent = "■ Stop";
 
-        try {
-            const stdin = prompt(
-                "Enter program input for scanf. Leave blank if not needed:"
-            ) ?? "";
-
-            writeTerminal("Compiling and running C program...");
-
-            const response = await fetch(COMPILER_API, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    language: "c",
-                    version: "*",
-                    files: [{
-                        name: currentFileName.endsWith(".c")
-                            ? currentFileName
-                            : "main.c",
-                        content: sourceCode
-                    }],
-                    stdin,
-                    compile_timeout: 10000,
-                    run_timeout: 3000
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(
-                    `Compiler returned HTTP ${response.status}`
-                );
+        liveRun = runLiveProgram({
+            api: COMPILER_API.replace(/\/execute$/, ""),
+            filename: currentFileName.endsWith(".c") ? currentFileName : "main.c",
+            source: sourceCode,
+            terminal,
+            onEnd: () => {
+                isRunning = false;
+                liveRun = null;
+                runBtn.disabled = false;
+                runBtn.textContent = "▶ Run";
             }
-
-            const result = await response.json();
-
-            clearTerminal();
-
-            if (result.message) {
-                writeTerminal(result.message, "error");
-                return;
-            }
-
-            if (result.compile) {
-                if (result.compile.stdout) {
-                    writeTerminal(result.compile.stdout);
-                }
-
-                if (result.compile.stderr) {
-                    writeTerminal(result.compile.stderr, "error");
-                }
-
-                if (result.compile.code !== 0) {
-                    writeTerminal("Compilation failed.", "error");
-                    return;
-                }
-            }
-
-            if (!result.run) {
-                writeTerminal(
-                    "Compiler returned no execution result.",
-                    "error"
-                );
-                return;
-            }
-
-            if (result.run.stdout) {
-                writeTerminal(result.run.stdout);
-            }
-
-            if (result.run.stderr) {
-                writeTerminal(result.run.stderr, "error");
-            }
-
-            if (result.run.code === 0) {
-                writeTerminal(
-                    "Program finished successfully.",
-                    "success"
-                );
-            } else {
-                writeTerminal(
-                    `Program exited with code ${result.run.code ?? "unknown"}.`,
-                    "error"
-                );
-            }
-
-        } catch (error) {
-            console.error("C execution failed:", error);
-            writeTerminal(`Execution failed: ${error.message}`, "error");
-
-        } finally {
-            isRunning = false;
-            runBtn.disabled = false;
-            runBtn.textContent = "▶ Run";
-        }
+        });
     });
 }
 
