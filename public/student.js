@@ -419,9 +419,10 @@ if (runBtn) {
         runBtn.textContent = "⏳ Running...";
 
         try {
-            const stdin = prompt(
-                "Enter program input for scanf. Leave blank if not needed:"
-            ) ?? "";
+           const needsInput = /\b(scanf|fscanf|getchar|gets|fgets|getch)\s*\(/.test(sourceCode);
+const stdin = needsInput
+    ? (prompt("Enter program input for scanf (separate values with spaces or new lines):") ?? "")
+    : "";
 
             writeTerminal("Compiling and running C program...");
 
