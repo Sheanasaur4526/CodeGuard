@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: codeguard-compiler
+    runtime: docker
+    plan: free
+    dockerfilePath: ./compiler-service/Dockerfile
+    dockerContext: ./compiler-service
+    healthCheckPath: /health
+    envVars:
+      - key: ALLOWED_ORIGIN
+        value: https://codeguard-e4c3f.web.app

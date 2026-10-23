@@ -16,7 +16,13 @@ import {
 // CONFIGURATION
 // ==================================================
 
-const COMPILER_API = ""; // Configure your secured C compiler backend.
+const COMPILER_API = "http://localhost:2000/execute";
+
+// Free hosts (e.g. Render) put the service to sleep when idle. Ping it as
+// soon as the page opens so it is awake by the time the student clicks Run.
+if (COMPILER_API) {
+    fetch(COMPILER_API.replace(/\/execute$/, "/health")).catch(() => {});
+}
 
 // ==================================================
 // GLOBAL STATE
