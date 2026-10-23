@@ -16,7 +16,8 @@ import {
 // CONFIGURATION
 // ==================================================
 
-const COMPILER_API = "http://localhost:2000/execute";
+const COMPILER_API = "https://codeguard-wsx7.onrender.com/execute";
+
 
 // Free hosts (e.g. Render) put the service to sleep when idle. Ping it as
 // soon as the page opens so it is awake by the time the student clicks Run.
