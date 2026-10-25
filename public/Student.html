@@ -45,21 +45,35 @@
                 <h3>📁 Activity File</h3>
             </div>
 
-            <div class="panel-content">
+            
+<div class="panel-content">
 
-                <h4>Activity Instructions</h4>
-                <p id="activityText">
-                    Your assigned programming activity will appear here.
-                </p>
+    <h4>Activity Instructions</h4>
+    <p id="activityText">
+        Your assigned programming activity will appear here.
+    </p>
 
-                <h4>Grading Rubric</h4>
-                <pre id="rubricText">Correctness   - 40%
+    <!-- TEACHER'S TEST CASES -->
+    <h4>Test Cases</h4>
+    <p class="test-cases-description">
+        Use these examples to check your C program.
+    </p>
+
+    <div id="activityTestCases" class="activity-test-cases">
+    <p class="terminal-muted">
+        Test cases will appear here when the activity loads.
+    </p>
+</div>
+
+    <h4>Grading Rubric</h4>
+    <pre id="rubricText">Correctness   - 40%
 Code Quality  - 20%
 Efficiency    - 20%
 Style         - 20%
 Total         - 100%</pre>
 
-            </div>
+</div>
+
 
             <button
                 id="closeFileBtn"
@@ -106,6 +120,9 @@ Total         - 100%</pre>
                 <button id="runBtn" class="btn btn-run">
                     ▶ Run
                 </button>
+                <button id="runTestsBtn" class="btn" type="button">
+    ✓ Run Tests
+</button>
 
                 <button id="saveBtn" class="btn btn-save">
                     💾 Save

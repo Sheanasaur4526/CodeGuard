@@ -248,6 +248,10 @@ async function loadRoomFile() {
 
         const room = snapshot.docs[0].data();
 
+        console.log("Loaded room data:", room);
+        console.log("Room test cases:", room.testCases);
+
+        // Display activity instructions.
         const activityEl = $("activityText");
 
         if (activityEl) {
@@ -255,6 +259,71 @@ async function loadRoomFile() {
                 room.activity ?? "No activity available.";
         }
 
+        // Display teacher's test cases.
+        const testCasesEl = $("activityTestCases");
+
+        if (testCasesEl) {
+            testCasesEl.replaceChildren();
+
+            const testCases =
+                room.testCases ??
+                room.testcases ??
+                room.test_cases ??
+                [];
+
+            if (!Array.isArray(testCases) || testCases.length === 0) {
+                const message = document.createElement("p");
+                message.className = "terminal-muted";
+                message.textContent =
+                    "No test cases found for this activity.";
+
+                testCasesEl.appendChild(message);
+            } else {
+                testCases.forEach((testCase, index) => {
+                    const card = document.createElement("div");
+                    card.className = "activity-test-case";
+
+                    const heading = document.createElement("h5");
+                    heading.textContent = `Test Case ${index + 1}`;
+
+                    const inputLabel = document.createElement("span");
+                    inputLabel.className = "test-case-label";
+                    inputLabel.textContent = "Input";
+
+                    const inputValue = document.createElement("pre");
+                    inputValue.textContent =
+                        testCase.input == null || testCase.input === ""
+                            ? "(No input)"
+                            : String(testCase.input);
+
+                    const outputLabel = document.createElement("span");
+                    outputLabel.className = "test-case-label";
+                    outputLabel.textContent = "Expected Output";
+
+                    const outputValue = document.createElement("pre");
+                    outputValue.textContent =
+                        testCase.expectedOutput == null
+                            ? "(Not provided)"
+                            : String(testCase.expectedOutput);
+
+                    card.append(
+                        heading,
+                        inputLabel,
+                        inputValue,
+                        outputLabel,
+                        outputValue
+                    );
+
+                    testCasesEl.appendChild(card);
+                });
+            }
+        } else {
+            console.error(
+                'Missing HTML element: id="activityTestCases"'
+            );
+        }
+
+        // Display grading rubric.
         const rubricEl = $("rubricText");
 
         if (rubricEl) {
@@ -270,6 +339,7 @@ async function loadRoomFile() {
                 : "No rubric available.";
         }
 
+        // Show the Activity File panel.
         const panel = $("filePanel");
 
         if (panel) {
@@ -281,9 +351,13 @@ async function loadRoomFile() {
 
     } catch (error) {
         console.error("Error loading room activity:", error);
-        writeTerminal("Failed to load room activity.", "error");
+        writeTerminal(
+            `Failed to load room activity: ${error.message}`,
+            "error"
+        );
     }
 }
+
 
 // ==================================================
 // OPEN LOCAL C FILE
@@ -435,6 +509,383 @@ if (runBtn) {
             }
         });
     });
+}
+
+
+ // ==================================================
+// AUTOMATED TEST CASE RUNNER
+// ==================================================
+
+const runTestsBtn = $("runTestsBtn");
+const testResultsContainer = $("testResultsContainer");
+const testResultsSummary = $("testResultsSummary");
+
+let isTesting = false;
+
+// Normalize line endings and whitespace.
+function normalizeTestOutput(value) {
+    return String(value ?? "")
+        .replace(/\r\n/g, "\n")
+        .trim()
+        .replace(/[ \t]+/g, " ");
+}
+
+// Compare the expected output with the actual output.
+// Accept either an exact match or a match with the
+// final non-empty output line.
+
+function checkTestOutput(actualOutput, expectedOutput) {
+    const normalize = value =>
+        String(value ?? "")
+            .replace(/\r\n/g, "\n")
+            .trim()
+            .replace(/[ \t]+/g, " ");
+
+    const actual = normalize(actualOutput);
+    const expected = normalize(expectedOutput);
+
+    // Exact output match.
+    if (actual === expected) {
+        return true;
+    }
+
+    // Check the last non-empty line.
+    const lines = actual
+        .split("\n")
+        .map(line => line.trim())
+        .filter(Boolean);
+
+    const lastLine = lines[lines.length - 1] || "";
+
+    if (lastLine === expected) {
+        return true;
+    }
+
+    // Handle output where the prompt and answer share a line,
+    // such as "The sum of -1 and 2 is: 1".
+    // Match the expected value at the end of the final line.
+    const escapedExpected = expected.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+    );
+
+    const answerAtEnd = new RegExp(
+        `(?:^|\\s|:)${escapedExpected}$`
+    );
+
+    return answerAtEnd.test(lastLine);
+}
+
+
+// Safely display test results.
+function createResultText(tag, text, className = "") {
+    const element = document.createElement(tag);
+    element.textContent = String(text ?? "");
+
+    if (className) {
+        element.className = className;
+    }
+
+    return element;
+}
+
+function renderTestResult(index, result) {
+    if (!testResultsContainer) return;
+
+    const item = document.createElement("div");
+    item.className = "test-result-item";
+
+    const details = document.createElement("div");
+
+    details.appendChild(
+        createResultText("h4", `Test Case ${index + 1}`)
+    );
+
+    details.appendChild(
+        createResultText("p", `Input: ${result.input || "(no input)"}`)
+    );
+
+    details.appendChild(
+        createResultText("p", "Expected output:")
+    );
+
+    details.appendChild(
+        createResultText("pre", result.expectedOutput || "(empty)")
+    );
+
+    details.appendChild(
+        createResultText("p", "Actual output:")
+    );
+
+    details.appendChild(
+        createResultText("pre", result.actualOutput || "(empty)")
+    );
+
+    if (result.message) {
+        details.appendChild(
+            createResultText("pre", result.message)
+        );
+    }
+
+    const status = createResultText(
+        "span",
+        result.status,
+        `test-result-status ${result.status.toLowerCase()}`
+    );
+
+    item.append(details, status);
+    testResultsContainer.appendChild(item);
+}
+
+async function runAutomatedTests() {
+    if (isTesting) return;
+
+    if (!roomCode) {
+        alert("Please join a room before running tests.");
+        return;
+    }
+
+    if (!editor || !editor.value.trim()) {
+        alert("Please write your C code first.");
+        return;
+    }
+
+    if (!COMPILER_API) {
+        alert("The C compiler service is not configured.");
+        return;
+    }
+
+    isTesting = true;
+
+    if (runTestsBtn) {
+        runTestsBtn.disabled = true;
+        runTestsBtn.textContent = "Running Tests...";
+    }
+
+    if (testResultsContainer) {
+        testResultsContainer.replaceChildren();
+    }
+
+    if (testResultsSummary) {
+        testResultsSummary.textContent = "Loading test cases...";
+    }
+
+    try {
+        const roomQuery = query(
+            collection(db, "rooms"),
+            where("roomCode", "==", roomCode)
+        );
+
+        const roomSnapshot = await getDocs(roomQuery);
+
+        if (roomSnapshot.empty) {
+            throw new Error("Room not found. Check your room code.");
+        }
+
+        const room = roomSnapshot.docs[0].data();
+
+        const testCases =
+            room.testCases ??
+            room.testcases ??
+            room.test_cases ??
+            [];
+
+        if (!Array.isArray(testCases) || testCases.length === 0) {
+            throw new Error(
+                "Your teacher has not added any test cases to this room."
+            );
+        }
+
+        const sourceCode = editor.value;
+        const filename = currentFileName.endsWith(".c")
+            ? currentFileName
+            : "main.c";
+
+        let passed = 0;
+        let failed = 0;
+        let errors = 0;
+
+        if (testResultsSummary) {
+            testResultsSummary.textContent =
+                `Running 0/${testCases.length} tests...`;
+        }
+
+        // Execute each test case separately.
+        for (let i = 0; i < testCases.length; i++) {
+            const testCase = testCases[i];
+
+            const input = String(testCase.input ?? "");
+            const expectedOutput = String(
+                testCase.expectedOutput ?? ""
+            );
+
+            const result = {
+                input,
+                expectedOutput,
+                actualOutput: "",
+                status: "ERROR",
+                message: ""
+            };
+
+            try {
+                if (testCase.expectedOutput == null) {
+                    throw new Error(
+                        "This test case has no expected output configured."
+                    );
+                }
+
+                const response = await fetch(COMPILER_API, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        files: [
+                            {
+                                name: filename,
+                                content: sourceCode
+                            }
+                        ],
+                        stdin: input,
+                        compile_timeout: 10000,
+                        run_timeout: 3000
+                    })
+                });
+
+                let data;
+
+                try {
+                    data = await response.json();
+                } catch {
+                    throw new Error(
+                        `Invalid compiler response (HTTP ${response.status}).`
+                    );
+                }
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.error ||
+                        data.message ||
+                        `Compiler request failed (HTTP ${response.status}).`
+                    );
+                }
+
+                if (!data.compile || data.compile.code !== 0) {
+                    const compileOutput = [
+                        data.compile?.stderr,
+                        data.compile?.stdout,
+                        data.error,
+                        data.message
+                    ].filter(Boolean).join("\n");
+
+                    result.status = "ERROR";
+                    result.message =
+                        "Compilation failed.\n" +
+                        (compileOutput || "No compiler details returned.");
+
+                } else if (!data.run) {
+                    result.status = "ERROR";
+                    result.message =
+                        "Compiler response did not include execution results.";
+
+                } else {
+                    result.actualOutput = String(
+                        data.run.stdout ?? ""
+                    );
+
+                    if (
+                        data.run.code !== 0 ||
+                        data.run.signal
+                    ) {
+                        result.status = "ERROR";
+
+                        result.message = [
+                            `Program exited with code: ${data.run.code ?? "unknown"}`,
+                            data.run.signal
+                                ? `Signal: ${data.run.signal}`
+                                : "",
+                            data.run.stderr || ""
+                        ].filter(Boolean).join("\n");
+
+                    } else {
+                        // FIX: use the new comparison function.
+                        result.status = checkTestOutput(
+    result.actualOutput,
+    expectedOutput
+)
+    ? "PASS"
+    : "FAIL";
+
+                        if (result.status === "FAIL") {
+                            result.message =
+                                "Output mismatch. Compare the actual output with the expected output.";
+                        }
+                    }
+                }
+
+            } catch (error) {
+                result.status = "ERROR";
+                result.message = error.message ||
+                    "Unexpected error while running this test.";
+            }
+
+            if (result.status === "PASS") {
+                passed++;
+            } else if (result.status === "FAIL") {
+                failed++;
+            } else {
+                errors++;
+            }
+
+            renderTestResult(i, result);
+
+            if (testResultsSummary) {
+                testResultsSummary.textContent =
+                    `Running ${i + 1}/${testCases.length} tests...`;
+            }
+        }
+
+        const percentage = Math.round(
+            (passed / testCases.length) * 100
+        );
+
+        if (testResultsSummary) {
+            testResultsSummary.textContent =
+                `${passed}/${testCases.length} passed · ${percentage}%` +
+                (failed ? ` · ${failed} failed` : "") +
+                (errors ? ` · ${errors} error(s)` : "");
+        }
+
+        writeTerminal(
+            `Automated tests completed: ${passed}/${testCases.length} passed (${percentage}%).`,
+            passed === testCases.length ? "success" : "normal"
+        );
+
+    } catch (error) {
+        console.error("Automated testing failed:", error);
+
+        if (testResultsSummary) {
+            testResultsSummary.textContent = "Tests could not run";
+        }
+
+        if (testResultsContainer) {
+            testResultsContainer.replaceChildren(
+                createResultText("p", error.message, "terminal-muted")
+            );
+        }
+
+    } finally {
+        isTesting = false;
+
+        if (runTestsBtn) {
+            runTestsBtn.disabled = false;
+            runTestsBtn.textContent = "✓ Run Tests";
+        }
+    }
+}
+
+if (runTestsBtn) {
+    runTestsBtn.addEventListener("click", runAutomatedTests);
 }
 
 // ==================================================

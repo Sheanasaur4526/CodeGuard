@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,8 +12,7 @@
 
 <div class="dashboard">
 
-    <!-- ================= SIDEBAR ================= -->
-
+    <!-- SIDEBAR -->
     <aside class="sidebar">
 
         <div class="logo">
@@ -30,20 +30,19 @@
 
     </aside>
 
-    <!-- ================= MAIN ================= -->
-
+    <!-- MAIN CONTENT -->
     <main class="main">
 
         <div class="topbar">
             <h1 id="pageTitle">Teacher Dashboard</h1>
         </div>
 
-        <!-- ================= DASHBOARD PAGE ================= -->
-
+        <!-- DASHBOARD PAGE -->
         <div id="dashboardPage">
 
             <div class="grid">
 
+                <!-- CREATE ACTIVITY -->
                 <div class="card">
                     <h2>Create Activity</h2>
 
@@ -52,11 +51,13 @@
                         placeholder="Enter activity instructions..."
                     ></textarea>
 
-                    <button>Add Activity</button>
+                    <button type="button">
+                        Add Activity
+                    </button>
                 </div>
 
+                <!-- RUBRICS -->
                 <div class="card">
-
                     <h2>Rubrics</h2>
 
                     <input id="rubric1" placeholder="Correctness">
@@ -64,85 +65,100 @@
                     <input id="rubric3" placeholder="Efficiency">
                     <input id="rubric4" placeholder="Style">
 
-                    <button>Save Rubric</button>
-
+                    <button type="button">
+                        Save Rubric
+                    </button>
                 </div>
 
+                <!-- LIVE SUBMISSIONS -->
                 <div class="card">
-
                     <h2>Live Submissions</h2>
 
                     <div class="submission-box">
                         Student submissions will appear here...
                     </div>
+                </div>
+
+                <!-- TEST CASE EDITOR -->
+                <div class="card test-cases-card">
+
+                    <div class="test-case-header">
+                        <div>
+                            <h2>Test Cases</h2>
+                        </div>
+
+                        <span id="testCaseCount">0 test cases</span>
+                    </div>
+
+                    <div
+                        id="testCasesContainer"
+                        class="test-cases-container"
+                    >
+                        <!-- Test cases are added dynamically -->
+                    </div>
+
+                    <div class="test-case-actions">
+                        <button type="button" id="addTestCaseBtn">
+                            + Add Test Case
+                        </button>
+
+                        <button type="button" id="saveTestCasesBtn">
+                            Save Test Cases
+                        </button>
+                    </div>
+
+                    <p id="testCaseMessage" role="status"></p>
 
                 </div>
 
-                <div class="card">
-
-                    <h2>Test Cases</h2>
-
-                    <textarea
-                        id="sampleCodeInput"
-                        placeholder="Paste Test Cases..."
-                    ></textarea>
-
-                    <button>Save</button>
-
-                </div>
-
+                <!-- CREATE ROOM -->
                 <div class="card create-room">
 
                     <h2>Create Room</h2>
 
-                    <textarea
+                    <label for="roomCode">Room Code</label>
+                    <input
+                        type="text"
                         id="roomCode"
                         readonly
-                        placeholder="Generated room code..."
-                    ></textarea>
-
-                    <input
-                        id="roomTitle"
-                        placeholder="Room Title"
+                        placeholder="Generate a room code..."
                     >
 
-                    <button onclick="generateRoomCode()">
+                    <label for="roomTitle">Room Title</label>
+                    <input
+                        type="text"
+                        id="roomTitle"
+                        placeholder="Enter room title..."
+                    >
+
+                    <button
+                        type="button"
+                        onclick="generateRoomCode()"
+                    >
                         Generate Room Code
                     </button>
 
-                    <button onclick="saveRoom()">
+                    <button
+                        type="button"
+                        onclick="saveRoom()"
+                    >
                         Create Room
                     </button>
 
                 </div>
 
             </div>
-
         </div>
 
-        <!-- ================= ROOMS PAGE ================= -->
+        <!-- ROOMS PAGE -->
+        <section id="roomsPage" style="display: none;">
+            <div id="roomList"></div>
+        </section>
 
-        <div id="roomsPage" style="display:none;">
+        <!-- ROOM DASHBOARD -->
+        <div id="roomDashboard" style="display: none;">
 
-            <div class="card">
-
-                <h2>My Rooms</h2>
-
-                <div id="roomList">
-
-                    <!-- Loaded from Firebase -->
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- ================= ROOM DASHBOARD ================= -->
-
-        <div id="roomDashboard" style="display:none;">
-
-            <button onclick="backToRooms()">
+            <button type="button" onclick="backToRooms()">
                 ← Back to Rooms
             </button>
 
@@ -150,77 +166,67 @@
 
             <div class="grid">
 
+                <!-- ACTIVITY -->
                 <div class="card">
-
                     <h2>Activity</h2>
 
                     <div id="activityDetails">
                         No activity available.
                     </div>
-
                 </div>
 
+                <!-- SAVED TEST CASES -->
                 <div class="card">
+                    <h2>Test Cases</h2>
 
-                    <h2>Sample Code</h2>
-
-                    <pre id="sampleCodeDetails">
-No sample code.
-                    </pre>
-
+                    <div id="roomTestCases">
+                        No test cases available.
+                    </div>
                 </div>
 
+                <!-- SAVED RUBRICS -->
                 <div class="card">
-
                     <h2>Rubrics</h2>
 
                     <div id="rubricDetails">
-
                         <p>Correctness: -</p>
                         <p>Code Quality: -</p>
                         <p>Efficiency: -</p>
                         <p>Style: -</p>
-
                     </div>
-
                 </div>
 
+                <!-- STUDENTS -->
                 <div class="card">
-
                     <h2>Students</h2>
 
                     <div id="studentList">
                         No students have joined this room.
                     </div>
-
                 </div>
 
+                <!-- SUBMISSIONS -->
                 <div class="card">
-
                     <h2>Submissions</h2>
 
                     <div id="submissionList">
                         No submissions yet.
                     </div>
-
                 </div>
 
+                <!-- VIOLATIONS -->
                 <div class="card">
-
                     <h2>Violations</h2>
 
                     <div id="violationList">
                         No violations yet.
                     </div>
-
                 </div>
 
             </div>
-
         </div>
 
     </main>
-
 </div>
 
 <script type="module" src="teacher.js"></script>

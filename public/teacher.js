@@ -1,4 +1,3 @@
-
 console.log("Teacher JS Loaded");
 
 /* =========================
@@ -127,8 +126,23 @@ window.saveRoom = async function () {
     const roomTitle = document.getElementById("roomTitle")
         .value.trim();
 
-    const activity = document.getElementById("activityInput").value;
-    const sampleCode = document.getElementById("sampleCodeInput").value;
+    const activity = document.getElementById("activityInput")?.value || "";
+
+    // Get test cases entered in the Test Cases section.
+    let testCases = window.codeGuardTestCases || [];
+
+    if (
+        testCasesContainer &&
+        testCasesContainer.querySelectorAll(".test-case-item").length > 0
+    ) {
+        try {
+            testCases = collectTestCases();
+            window.codeGuardTestCases = testCases;
+        } catch (error) {
+            alert(error.message);
+            return;
+        }
+    }
 
     const rubric = {
         correctness: document.getElementById("rubric1").value,
@@ -154,7 +168,7 @@ window.saveRoom = async function () {
             roomCode,
             roomTitle,
             activity,
-            sampleCode,
+            testCases,
             rubric,
             createdAt: serverTimestamp()
         });
@@ -164,11 +178,23 @@ window.saveRoom = async function () {
         document.getElementById("roomCode").value = "";
         document.getElementById("roomTitle").value = "";
         document.getElementById("activityInput").value = "";
-        document.getElementById("sampleCodeInput").value = "";
+
         document.getElementById("rubric1").value = "";
         document.getElementById("rubric2").value = "";
         document.getElementById("rubric3").value = "";
         document.getElementById("rubric4").value = "";
+
+        // Clear test cases after creating the room.
+        if (testCasesContainer) {
+            testCasesContainer.replaceChildren();
+            renumberTestCases();
+        }
+
+        window.codeGuardTestCases = [];
+
+        if (testCaseMessage) {
+            testCaseMessage.textContent = "";
+        }
 
         await loadRooms();
 
@@ -221,6 +247,7 @@ async function loadRooms() {
             code.textContent = "Room Code: " + (room.roomCode || "");
 
             info.append(title, code);
+
             info.addEventListener("click", () => {
                 window.openRoom(roomDoc.id);
             });
@@ -231,6 +258,7 @@ async function loadRooms() {
             const openButton = document.createElement("button");
             openButton.className = "open-btn";
             openButton.textContent = "Open";
+
             openButton.addEventListener("click", () => {
                 window.openRoom(roomDoc.id);
             });
@@ -238,6 +266,7 @@ async function loadRooms() {
             const deleteButton = document.createElement("button");
             deleteButton.className = "delete-btn";
             deleteButton.textContent = "Delete";
+
             deleteButton.addEventListener("click", () => {
                 window.deleteRoom(roomDoc.id);
             });
@@ -254,6 +283,57 @@ async function loadRooms() {
 }
 
 /* =========================
+   DISPLAY TEST CASES
+   IN ROOM DASHBOARD
+========================= */
+
+function displayRoomTestCases(testCases) {
+    const container = document.getElementById("roomTestCases");
+
+    if (!container) {
+        console.error("Missing #roomTestCases in teacher.html.");
+        return;
+    }
+
+    container.replaceChildren();
+
+    if (!Array.isArray(testCases) || testCases.length === 0) {
+        container.textContent = "No test cases saved for this room.";
+        return;
+    }
+
+    testCases.forEach((testCase, index) => {
+        const card = document.createElement("div");
+        card.className = "room-test-case-item";
+
+        const heading = document.createElement("h3");
+        heading.textContent = `Test Case ${index + 1}`;
+
+        const inputLabel = document.createElement("p");
+        inputLabel.textContent = "Program Input (stdin)";
+
+        const input = document.createElement("pre");
+        input.textContent = String(testCase.input ?? "");
+
+        const outputLabel = document.createElement("p");
+        outputLabel.textContent = "Expected Output (stdout)";
+
+        const output = document.createElement("pre");
+        output.textContent = String(testCase.expectedOutput ?? "");
+
+        card.append(
+            heading,
+            inputLabel,
+            input,
+            outputLabel,
+            output
+        );
+
+        container.appendChild(card);
+    });
+}
+
+/* =========================
    OPEN ROOM
 ========================= */
 
@@ -261,11 +341,13 @@ window.openRoom = async function (roomId) {
     try {
         stopRoomListeners();
 
+        console.log("Opening room ID:", roomId);
+
         const roomRef = doc(db, "rooms", roomId);
         const roomSnap = await getDoc(roomRef);
 
         if (!roomSnap.exists()) {
-            alert("Room not found.");
+            alert("Room not found in Firestore.");
             return;
         }
 
@@ -274,52 +356,100 @@ window.openRoom = async function (roomId) {
             ...roomSnap.data()
         };
 
-        document.getElementById("dashboardPage").style.display = "none";
-        document.getElementById("roomsPage").style.display = "none";
-        document.getElementById("roomDashboard").style.display = "block";
+        console.log("Room loaded:", currentRoom);
 
-        document.getElementById("pageTitle").textContent =
-            currentRoom.roomTitle || "Room Dashboard";
+        const dashboardPage = document.getElementById("dashboardPage");
+        const roomsPage = document.getElementById("roomsPage");
+        const roomDashboard = document.getElementById("roomDashboard");
 
-        document.getElementById("selectedRoomTitle").textContent =
-            currentRoom.roomTitle || "Untitled Room";
+        if (!dashboardPage || !roomsPage || !roomDashboard) {
+            console.error("Missing dashboard HTML elements:", {
+                dashboardPage: !!dashboardPage,
+                roomsPage: !!roomsPage,
+                roomDashboard: !!roomDashboard
+            });
 
-        document.getElementById("activityDetails").textContent =
-            currentRoom.activity || "No activity available.";
+            alert("Room dashboard HTML elements are missing. Check teacher.html.");
+            return;
+        }
 
-        document.getElementById("sampleCodeDetails").textContent =
-            currentRoom.sampleCode || "No sample code.";
+        dashboardPage.style.display = "none";
+        roomsPage.style.display = "none";
+        roomDashboard.style.display = "block";
 
-        const rubricDetails = document.getElementById("rubricDetails");
-        rubricDetails.replaceChildren();
+        const pageTitle = document.getElementById("pageTitle");
+        const selectedRoomTitle =
+            document.getElementById("selectedRoomTitle");
+        const activityDetails =
+            document.getElementById("activityDetails");
+        const rubricDetails =
+            document.getElementById("rubricDetails");
 
-        const rubric = currentRoom.rubric || {};
+        if (pageTitle) {
+            pageTitle.textContent =
+                currentRoom.roomTitle || "Room Dashboard";
+        }
 
-        [
-            ["Correctness", rubric.correctness],
-            ["Code Quality", rubric.codeQuality],
-            ["Efficiency", rubric.efficiency],
-            ["Style", rubric.style]
-        ].forEach(([label, value]) => {
-            const p = document.createElement("p");
-            const strong = document.createElement("strong");
+        if (selectedRoomTitle) {
+            selectedRoomTitle.textContent =
+                currentRoom.roomTitle || "Untitled Room";
+        }
 
-            strong.textContent = label + ": ";
-            p.append(strong, document.createTextNode(value || "-"));
-            rubricDetails.appendChild(p);
-        });
+        if (activityDetails) {
+            activityDetails.textContent =
+                currentRoom.activity || "No activity available.";
+        }
 
-        loadStudents(currentRoom.roomCode);
-        loadViolations(currentRoom.roomCode);
+        // Display saved test cases from the Firestore room document.
+        const savedTestCases =
+            currentRoom.testCases ??
+            currentRoom.testcases ??
+            currentRoom.test_cases ??
+            [];
+
+        displayRoomTestCases(savedTestCases);
+
+        if (rubricDetails) {
+            rubricDetails.replaceChildren();
+
+            const rubric = currentRoom.rubric || {};
+
+            [
+                ["Correctness", rubric.correctness],
+                ["Code Quality", rubric.codeQuality],
+                ["Efficiency", rubric.efficiency],
+                ["Style", rubric.style]
+            ].forEach(([label, value]) => {
+                const p = document.createElement("p");
+                const strong = document.createElement("strong");
+
+                strong.textContent = label + ": ";
+
+                p.append(
+                    strong,
+                    document.createTextNode(String(value ?? "-"))
+                );
+
+                rubricDetails.appendChild(p);
+            });
+        }
+
+        if (currentRoom.roomCode) {
+            loadStudents(currentRoom.roomCode);
+            loadViolations(currentRoom.roomCode);
+        } else {
+            console.warn("This room has no roomCode:", currentRoom);
+        }
 
     } catch (error) {
         console.error("Failed to open room:", error);
-        alert("Failed to open room. Check the console.");
+        alert("Failed to open room: " + error.message);
     }
 };
 
 /* =========================
    LOAD STUDENTS IN ROOM
+
    Expected collection: roomStudents
    Expected fields: roomCode, username/name
 ========================= */
@@ -371,15 +501,17 @@ function loadStudents(roomCode) {
 
                 item.appendChild(name);
 
-                // Optional: show when the student joined
+                // Optional: show when the student joined.
                 if (student.joinedAt?.toDate) {
                     const joined = document.createElement("small");
+
                     joined.textContent =
                         "Joined: " +
                         student.joinedAt.toDate().toLocaleString();
 
                     joined.style.display = "block";
                     joined.style.color = "#999";
+
                     item.appendChild(joined);
                 }
 
@@ -388,11 +520,52 @@ function loadStudents(roomCode) {
         },
         (error) => {
             console.error("Failed to load students:", error);
+
             studentList.textContent =
                 "Unable to load students. Check Firestore permissions and collection fields.";
         }
     );
 }
+
+/* =====================================
+   LOAD TEST CASES FOR SELECTED ROOM
+===================================== */
+
+window.loadRoomTestCases = async function (roomId) {
+    const container = document.getElementById("roomTestCases");
+
+    if (!container) {
+        console.error("Missing #roomTestCases in teacher.html.");
+        return;
+    }
+
+    container.textContent = "Loading test cases...";
+
+    try {
+        const roomSnap = await getDoc(doc(db, "rooms", roomId));
+
+        if (!roomSnap.exists()) {
+            container.textContent = "Room not found.";
+            return;
+        }
+
+        const roomData = roomSnap.data();
+
+        const testCases =
+            roomData.testCases ??
+            roomData.testcases ??
+            roomData.test_cases ??
+            [];
+
+        displayRoomTestCases(testCases);
+
+    } catch (error) {
+        console.error("Error loading room test cases:", error);
+
+        container.textContent =
+            "Unable to load test cases. Please try again.";
+    }
+};
 
 /* =========================
    LOAD VIOLATIONS
@@ -502,3 +675,168 @@ window.deleteRoom = async function (roomId) {
         alert("Failed to delete room.");
     }
 };
+
+/* =========================
+   TEST CASES
+========================= */
+
+const testCasesContainer =
+    document.getElementById("testCasesContainer");
+
+const addTestCaseBtn =
+    document.getElementById("addTestCaseBtn");
+
+const saveTestCasesBtn =
+    document.getElementById("saveTestCasesBtn");
+
+const testCaseCount =
+    document.getElementById("testCaseCount");
+
+const testCaseMessage =
+    document.getElementById("testCaseMessage");
+
+// Add a test case.
+function addTestCase(input = "", expectedOutput = "") {
+    if (!testCasesContainer) return;
+
+    const caseCard = document.createElement("div");
+    caseCard.className = "test-case-item";
+
+    caseCard.innerHTML = `
+        <div class="test-case-item-header">
+            <h3></h3>
+            <button type="button" class="remove-test-case">
+                Remove
+            </button>
+        </div>
+
+        <label>Program Input (stdin)</label>
+        <textarea
+            class="test-input"
+            placeholder="Enter program input..."
+        ></textarea>
+
+        <label>Expected Output (stdout)</label>
+        <textarea
+            class="test-output"
+            placeholder="Enter expected output..."
+        ></textarea>
+    `;
+
+    caseCard.querySelector(".test-input").value = input;
+    caseCard.querySelector(".test-output").value = expectedOutput;
+
+    caseCard
+        .querySelector(".remove-test-case")
+        .addEventListener("click", () => {
+            caseCard.remove();
+            renumberTestCases();
+
+            if (testCaseMessage) {
+                testCaseMessage.textContent = "";
+            }
+        });
+
+    testCasesContainer.appendChild(caseCard);
+
+    renumberTestCases();
+}
+
+// Update test case numbering and count.
+function renumberTestCases() {
+    if (!testCasesContainer) return;
+
+    const items =
+        testCasesContainer.querySelectorAll(".test-case-item");
+
+    items.forEach((item, index) => {
+        item.querySelector("h3").textContent =
+            `Test Case ${index + 1}`;
+    });
+
+    updateTestCaseCount();
+}
+
+// Update the displayed number of test cases.
+function updateTestCaseCount() {
+    if (!testCasesContainer || !testCaseCount) return;
+
+    const count =
+        testCasesContainer.querySelectorAll(".test-case-item").length;
+
+    testCaseCount.textContent =
+        `${count} test case${count === 1 ? "" : "s"}`;
+}
+
+// Collect and validate test cases.
+function collectTestCases() {
+    if (!testCasesContainer) {
+        throw new Error("Test cases section was not found.");
+    }
+
+    const items =
+        testCasesContainer.querySelectorAll(".test-case-item");
+
+    const cases = [];
+
+    items.forEach((item, index) => {
+        const input =
+            item.querySelector(".test-input").value;
+
+        const expectedOutput =
+            item.querySelector(".test-output").value;
+
+        if (!expectedOutput.trim()) {
+            throw new Error(
+                `Enter the expected output for Test Case ${index + 1}.`
+            );
+        }
+
+        cases.push({
+            input: input,
+            expectedOutput: expectedOutput
+        });
+    });
+
+    if (cases.length === 0) {
+        throw new Error("Add at least one test case.");
+    }
+
+    return cases;
+}
+
+// Add Test Case button.
+if (addTestCaseBtn && testCasesContainer) {
+    addTestCaseBtn.addEventListener("click", () => {
+        addTestCase();
+
+        if (testCaseMessage) {
+            testCaseMessage.textContent = "";
+        }
+    });
+}
+
+// Save Test Cases button.
+// This validates the cases and keeps them ready for room creation.
+// The cases are persisted to Firestore when Create Room is clicked.
+if (saveTestCasesBtn && testCasesContainer) {
+    saveTestCasesBtn.addEventListener("click", () => {
+        try {
+            const testCases = collectTestCases();
+
+            window.codeGuardTestCases = testCases;
+
+            if (testCaseMessage) {
+                testCaseMessage.textContent =
+                    `${testCases.length} test cases validated successfully.`;
+            }
+
+            console.log("Validated test cases:", testCases);
+
+        } catch (error) {
+            if (testCaseMessage) {
+                testCaseMessage.textContent = error.message;
+            }
+        }
+    });
+}

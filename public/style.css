@@ -963,3 +963,324 @@ body.teacher-page {
     border-radius: 6px;
     color: #00ffcc;
 }
+
+
+/* Scrollable Test Cases List */
+#testCasesContainer {
+    max-height: 400px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 4px 10px 4px 2px;
+    margin-top: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: #94a3b8 #f1f5f9;
+}
+
+/* Scrollbar for Chrome, Edge, and Safari */
+#testCasesContainer::-webkit-scrollbar {
+    width: 8px;
+}
+
+#testCasesContainer::-webkit-scrollbar-track {
+    background: #080f1e;
+    border-radius: 8px;
+}
+
+#testCasesContainer::-webkit-scrollbar-thumb {
+    background: #080f1e;
+    border-radius: 8px;
+}
+
+#testCasesContainer::-webkit-scrollbar-thumb:hover {
+    background: #080f1e;
+}
+
+/* Individual test cases */
+.test-case-item {
+    padding: 14px;
+    margin-bottom: 12px;
+    border: 1px solid #080f1e;
+    border-radius: 8px;
+    background: #080f1e;
+}
+
+/* Keep controls accessible below the scrolling list */
+.test-case-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.test-case-item textarea {
+    width: 100%;
+    min-height: 70px;
+    box-sizing: border-box;
+    resize: vertical;
+    font-family: monospace;
+}
+#roomsPage {
+    width: 100%;
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+#roomList {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    width: 100%;
+}
+
+.room-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 18px;
+    border: 1px solid #080f1e;
+    border-radius: 10px;
+    background: #080f1e;
+}
+
+/* Fix CodeGuard Teacher Rooms layout */
+.teacher-page .main {
+    flex: 1;
+    min-width: 0;
+}
+
+.teacher-page #roomsPage {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.teacher-page #roomsPage h2 {
+    margin: 0 0 20px;
+}
+
+.teacher-page #roomList {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    align-items: start;
+    gap: 16px;
+    width: 100%;
+    margin-top: 0;
+}
+
+.teacher-page #roomList .room-item {
+    min-width: 0;
+    margin: 0;
+    align-self: start;
+}
+
+/* Test cases displayed inside a selected room */
+.teacher-page .room-test-case-item {
+    margin-bottom: 12px;
+    padding: 14px;
+    background: #1e1e1e;
+    border: 1px solid #3a3a3a;
+    border-radius: 8px;
+}
+
+.teacher-page .room-test-case-item h3 {
+    margin-bottom: 12px;
+    color: #00ffcc;
+    font-size: 15px;
+}
+
+.teacher-page .room-test-case-item strong {
+    display: block;
+    margin: 10px 0 6px;
+    color: #123b2b;
+    font-size: 13px;
+}
+
+.teacher-page .room-test-case-item pre {
+    margin: 0;
+    padding: 10px;
+    background: #111111;
+    border: 1px solid #353535;
+    border-radius: 5px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+
+/* =====================================
+   STUDENT AUTOMATED TEST RESULTS
+   ===================================== */
+
+.test-results-panel {
+    flex-shrink: 0;
+    max-height: 260px;
+    display: flex;
+    flex-direction: column;
+}
+
+#testResultsSummary {
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.test-results-container {
+    padding: 12px 14px;
+    overflow-y: auto;
+    min-height: 70px;
+    max-height: 210px;
+    background: var(--editor-bg);
+}
+
+.test-result-item {
+    display: grid;
+    grid-template-columns: minmax(100px, 1fr) auto;
+    gap: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+}
+
+.test-result-item:last-child {
+    margin-bottom: 0;
+}
+
+.test-result-item h4 {
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+
+.test-result-item pre {
+    margin-top: 6px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font: 12px/1.6 Consolas, monospace;
+    color: var(--muted);
+}
+
+.test-result-status {
+    align-self: start;
+    padding: 4px 9px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.test-result-status.pass {
+    color: #8affb0;
+    background: #123b2b;
+}
+
+.test-result-status.fail {
+    color: #ff8585;
+    background: #451e28;
+}
+
+.test-result-status.error {
+    color: #ffd479;
+    background: #40331c;
+}
+
+@media (max-width: 760px) {
+    .test-results-panel {
+        max-height: 300px;
+    }
+
+    .test-results-container {
+        max-height: 240px;
+    }
+}
+
+/* =====================================
+   STUDENT AUTOMATED TEST RESULTS
+   ===================================== */
+
+.test-results-panel {
+    flex-shrink: 0;
+    max-height: 260px;
+    display: flex;
+    flex-direction: column;
+}
+
+#testResultsSummary {
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.test-results-container {
+    padding: 12px 14px;
+    overflow-y: auto;
+    min-height: 70px;
+    max-height: 210px;
+    background: var(--editor-bg);
+}
+
+.test-result-item {
+    display: grid;
+    grid-template-columns: minmax(100px, 1fr) auto;
+    gap: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+}
+
+.test-result-item:last-child {
+    margin-bottom: 0;
+}
+
+.test-result-item h4 {
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+
+.test-result-item p {
+    margin: 6px 0;
+    font-size: 12px;
+}
+
+.test-result-item pre {
+    margin-top: 6px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font: 12px/1.6 Consolas, monospace;
+    color: var(--muted);
+}
+
+.test-result-status {
+    align-self: start;
+    padding: 4px 9px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.test-result-status.pass {
+    color: #8affb0;
+    background: #123b2b;
+}
+
+.test-result-status.fail {
+    color: #ff8585;
+    background: #451e28;
+}
+
+.test-result-status.error {
+    color: #ffd479;
+    background: #40331c;
+}
+
+@media (max-width: 760px) {
+    .test-results-panel {
+        max-height: 300px;
+    }
+
+    .test-results-container {
+        max-height: 240px;
+    }
+}
