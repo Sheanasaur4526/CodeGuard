@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CodeGuard - AI Classroom System</title>
+
+    <style>
+        /* RESET */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        /* PAGE LAYOUT */
+        body {
+            height: 100vh;
+            background: #0f172a;
+            color: white;
+        }
+
+        /* CENTER CONTAINER */
+        .center-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            padding: 20px;
+        }
+
+        /* HEADER */
+        .header {
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 50px;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            margin-top: 8px;
+        }
+
+        /* CARDS CONTAINER */
+        .cards-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* CARD */
+        .card {
+            background: #1e293b;
+            width: 300px;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            transition: 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-6px);
+            background: #243045;
+        }
+
+        /* ICON */
+        .icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        /* INPUTS */
+        .card input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        /* BUTTON */
+        .primary-btn {
+            width: 100%;
+            margin-top: 15px;
+            padding: 10px;
+            background: #3b82f6;
+            border: none;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .primary-btn:hover {
+            background: #2563eb;
+        }
+        .logo {
+    font-size: 50px;
+    font-weight: bold;
+    margin: 0;   /* removes default spacing */
+}
+
+        .logo-img {
+    width: 90px;
+    height: 90px;
+    object-fit: contain;
+    margin-bottom: 5px; /* reduce space between logo and text */
+}
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 36px;
+            }
+
+            .cards-container {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="center-container">
+
+    <!-- HEADER -->
+    <div class="header">
+            
+        <h1 class="logo">CodeGuard</h1>
+        <p class="subtitle">SMART IDE</p>
+    </div>
+
+    <!-- CARDS -->
+    <div class="cards-container">
+
+
+        
+     <!-- TEACHER CARD -->
+<div class="card">
+    <div class="icon">👨‍🏫</div>
+
+    <h2>Teacher Login</h2>
+
+    <p>
+        Login to create rooms, assign coding tasks,
+        and monitor student submissions.
+    </p>
+
+<button
+    class="primary-btn"
+    onclick="window.location.href='teacher_login.html'">
+    Login as Teacher
+</button>
+</div>
+
+        <!-- STUDENT CARD -->
+        <div class="card">
+    <div class="icon">🎓</div>
+    <h2>Student</h2>
+    <p>Join a room and start solving coding problems instantly.</p>
+
+    <input type="text" id="username" placeholder="Enter Username">
+    <input type="text" id="roomCode" placeholder="Enter Room Code">
+
+    <button class="primary-btn" id="joinBtn">
+        Join Room
+    </button>
+
+
+
+</div>
+
+    </div>
+
+</div>
+
+<script type="module" src="login.js"></script>
+</body>
+</html>
