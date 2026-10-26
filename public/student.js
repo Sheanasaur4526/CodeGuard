@@ -1,4 +1,3 @@
-
 console.log("CodeGuard student.js loaded");
 
 import { db } from "./firebase.js";
@@ -9,6 +8,7 @@ import {
     query,
     where,
     getDocs,
+    onSnapshot,
     addDoc,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
@@ -222,8 +222,144 @@ async function registerStudentInRoom() {
 }
 
 // ==================================================
-// LOAD ROOM ACTIVITY
+// LOAD ROOM ACTIVITY (live)
 // ==================================================
+
+// Draws the activity instructions, the teacher's test cases and the
+// rubric from a room document. Called on first load and again every
+// time the teacher adds, edits or removes something.
+function renderRoomActivity(room) {
+    // Display activity instructions.
+    const activityEl = $("activityText");
+
+    if (activityEl) {
+        activityEl.textContent =
+            room.activity ?? "No activity available.";
+    }
+
+    // Display teacher's test cases.
+    const testCasesEl = $("activityTestCases");
+
+    if (testCasesEl) {
+        testCasesEl.replaceChildren();
+
+        const testCases = getRoomTestCases(room);
+
+        if (testCases.length === 0) {
+            const message = document.createElement("p");
+            message.className = "terminal-muted";
+            message.textContent =
+                "No test cases found for this activity.";
+
+            testCasesEl.appendChild(message);
+        } else {
+            testCases.forEach((testCase, index) => {
+                const card = document.createElement("div");
+                card.className = "activity-test-case";
+
+                const heading = document.createElement("h5");
+                heading.textContent = `Test Case ${index + 1}`;
+
+                const inputLabel = document.createElement("span");
+                inputLabel.className = "test-case-label";
+                inputLabel.textContent = "Input";
+
+                const inputValue = document.createElement("pre");
+                inputValue.textContent =
+                    testCase.input == null || testCase.input === ""
+                        ? "(No input)"
+                        : String(testCase.input);
+
+                const outputLabel = document.createElement("span");
+                outputLabel.className = "test-case-label";
+                outputLabel.textContent = "Expected Output";
+
+                const outputValue = document.createElement("pre");
+                outputValue.textContent =
+                    testCase.expectedOutput == null
+                        ? "(Not provided)"
+                        : String(testCase.expectedOutput);
+
+                card.append(
+                    heading,
+                    inputLabel,
+                    inputValue,
+                    outputLabel,
+                    outputValue
+                );
+
+                testCasesEl.appendChild(card);
+            });
+        }
+    } else {
+        console.error('Missing HTML element: id="activityTestCases"');
+    }
+
+    // Display grading rubric.
+    const rubricEl = $("rubricText");
+
+    if (rubricEl) {
+        const rubric = room.rubric;
+
+        rubricEl.textContent = rubric
+            ? [
+                `Correctness: ${rubric.correctness ?? "-"}`,
+                `Code Quality: ${rubric.codeQuality ?? "-"}`,
+                `Efficiency: ${rubric.efficiency ?? "-"}`,
+                `Style: ${rubric.style ?? "-"}`
+            ].join("\n")
+            : "No rubric available.";
+    }
+}
+
+function getRoomTestCases(room) {
+    const testCases =
+        room.testCases ??
+        room.testcases ??
+        room.test_cases ??
+        [];
+
+    return Array.isArray(testCases) ? testCases : [];
+}
+
+// Keeps the student's dashboard in sync with the room document, so test
+// cases the teacher adds or edits show up without reloading the page.
+let roomUnsubscribe = null;
+let lastTestCasesJson = null;
+
+function startRoomLiveSync() {
+    if (roomUnsubscribe || !roomCode) return;
+
+    const roomQuery = query(
+        collection(db, "rooms"),
+        where("roomCode", "==", roomCode)
+    );
+
+    roomUnsubscribe = onSnapshot(
+        roomQuery,
+        snapshot => {
+            if (snapshot.empty) return;
+
+            const room = snapshot.docs[0].data();
+            const json = JSON.stringify(getRoomTestCases(room));
+
+            renderRoomActivity(room);
+
+            if (lastTestCasesJson !== null && json !== lastTestCasesJson) {
+                writeTerminal(
+                    "Your teacher updated the test cases.",
+                    "success"
+                );
+            }
+
+            lastTestCasesJson = json;
+        },
+        error => {
+            console.error("Live room sync failed:", error);
+            roomUnsubscribe = null;
+        }
+    );
+}
 
 async function loadRoomFile() {
     if (!roomCode) {
@@ -249,95 +385,9 @@ async function loadRoomFile() {
         const room = snapshot.docs[0].data();
 
         console.log("Loaded room data:", room);
-        console.log("Room test cases:", room.testCases);
 
-        // Display activity instructions.
-        const activityEl = $("activityText");
-
-        if (activityEl) {
-            activityEl.textContent =
-                room.activity ?? "No activity available.";
-        }
-
-        // Display teacher's test cases.
-        const testCasesEl = $("activityTestCases");
-
-        if (testCasesEl) {
-            testCasesEl.replaceChildren();
-
-            const testCases =
-                room.testCases ??
-                room.testcases ??
-                room.test_cases ??
-                [];
-
-            if (!Array.isArray(testCases) || testCases.length === 0) {
-                const message = document.createElement("p");
-                message.className = "terminal-muted";
-                message.textContent =
-                    "No test cases found for this activity.";
-
-                testCasesEl.appendChild(message);
-            } else {
-                testCases.forEach((testCase, index) => {
-                    const card = document.createElement("div");
-                    card.className = "activity-test-case";
-
-                    const heading = document.createElement("h5");
-                    heading.textContent = `Test Case ${index + 1}`;
-
-                    const inputLabel = document.createElement("span");
-                    inputLabel.className = "test-case-label";
-                    inputLabel.textContent = "Input";
-
-                    const inputValue = document.createElement("pre");
-                    inputValue.textContent =
-                        testCase.input == null || testCase.input === ""
-                            ? "(No input)"
-                            : String(testCase.input);
-
-                    const outputLabel = document.createElement("span");
-                    outputLabel.className = "test-case-label";
-                    outputLabel.textContent = "Expected Output";
-
-                    const outputValue = document.createElement("pre");
-                    outputValue.textContent =
-                        testCase.expectedOutput == null
-                            ? "(Not provided)"
-                            : String(testCase.expectedOutput);
-
-                    card.append(
-                        heading,
-                        inputLabel,
-                        inputValue,
-                        outputLabel,
-                        outputValue
-                    );
-
-                    testCasesEl.appendChild(card);
-                });
-            }
-        } else {
-            console.error(
-                'Missing HTML element: id="activityTestCases"'
-            );
-        }
-
-        // Display grading rubric.
-        const rubricEl = $("rubricText");
-
-        if (rubricEl) {
-            const rubric = room.rubric;
-
-            rubricEl.textContent = rubric
-                ? [
-                    `Correctness: ${rubric.correctness ?? "-"}`,
-                    `Code Quality: ${rubric.codeQuality ?? "-"}`,
-                    `Efficiency: ${rubric.efficiency ?? "-"}`,
-                    `Style: ${rubric.style ?? "-"}`
-                ].join("\n")
-                : "No rubric available.";
-        }
+        renderRoomActivity(room);
+        lastTestCasesJson = JSON.stringify(getRoomTestCases(room));
 
         // Show the Activity File panel.
         const panel = $("filePanel");
@@ -345,6 +395,9 @@ async function loadRoomFile() {
         if (panel) {
             panel.style.display = "block";
         }
+
+        // From now on, teacher changes appear here automatically.
+        startRoomLiveSync();
 
         clearTerminal();
         writeTerminal("Room activity loaded successfully.", "success");
@@ -1028,6 +1081,9 @@ function initializeStudentUI() {
 
     // Register the student in Firestore after the IDE loads.
     void registerStudentInRoom();
+
+    // Show the teacher's activity and test cases, and keep them up to date.
+    startRoomLiveSync();
 
     if (openFileBtn) {
         openFileBtn.addEventListener("click", async () => {

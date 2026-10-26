@@ -16,6 +16,7 @@ import {
     doc,
     getDoc,
     deleteDoc,
+    updateDoc,
     orderBy,
     onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
@@ -288,6 +289,102 @@ async function loadRooms() {
 ========================= */
 
 function displayRoomTestCases(testCases) {
+    // Test cases are always editable: show the editor with the saved cases.
+    renderRoomTestCaseEditor(Array.isArray(testCases) ? testCases : []);
+}
+
+/* =========================
+   EDIT TEST CASES
+   FOR AN EXISTING ROOM
+========================= */
+
+function getCurrentRoomTestCases() {
+    const cases =
+        currentRoom?.testCases ??
+        currentRoom?.testcases ??
+        currentRoom?.test_cases ??
+        [];
+
+    return Array.isArray(cases) ? cases : [];
+}
+
+function setRoomTestCaseMessage(text, isError = false) {
+    const el = document.getElementById("roomTestCaseMessage");
+    if (!el) return;
+
+    el.textContent = text;
+    el.style.color = isError ? "#ff8585" : "#8affb0";
+}
+
+function createRoomTestCaseEditor(list, input = "", expectedOutput = "") {
+    const card = document.createElement("div");
+    card.className = "test-case-item";
+
+    card.innerHTML = `
+        <div class="test-case-item-header">
+            <h3></h3>
+            <button type="button" class="remove-test-case">
+                Remove
+            </button>
+        </div>
+
+        <label>Program Input (stdin)</label>
+        <textarea
+            class="test-input"
+            placeholder="Enter program input..."
+        ></textarea>
+
+        <label>Expected Output (stdout)</label>
+        <textarea
+            class="test-output"
+            placeholder="Enter expected output..."
+        ></textarea>
+    `;
+
+    card.querySelector(".test-input").value = input;
+    card.querySelector(".test-output").value = expectedOutput;
+
+    card.querySelector(".remove-test-case")
+        .addEventListener("click", () => {
+            card.remove();
+            renumberRoomTestCaseEditors(list);
+            setRoomTestCaseMessage("");
+        });
+
+    list.appendChild(card);
+    renumberRoomTestCaseEditors(list);
+}
+
+function renumberRoomTestCaseEditors(list) {
+    list.querySelectorAll(".test-case-item").forEach((item, index) => {
+        item.querySelector("h3").textContent = `Test Case ${index + 1}`;
+    });
+}
+
+function collectRoomTestCaseEditors(list) {
+    const cases = [];
+
+    list.querySelectorAll(".test-case-item").forEach((item, index) => {
+        const input = item.querySelector(".test-input").value;
+        const expectedOutput = item.querySelector(".test-output").value;
+
+        if (!expectedOutput.trim()) {
+            throw new Error(
+                `Enter the expected output for Test Case ${index + 1}.`
+            );
+        }
+
+        cases.push({ input, expectedOutput });
+    });
+
+    if (cases.length === 0) {
+        throw new Error("Add at least one test case.");
+    }
+
+    return cases;
+}
+
+function renderRoomTestCaseEditor(existing) {
     const container = document.getElementById("roomTestCases");
 
     if (!container) {
@@ -297,40 +394,75 @@ function displayRoomTestCases(testCases) {
 
     container.replaceChildren();
 
-    if (!Array.isArray(testCases) || testCases.length === 0) {
-        container.textContent = "No test cases saved for this room.";
-        return;
+    const list = document.createElement("div");
+    list.className = "room-test-case-editor";
+    container.appendChild(list);
+
+    if (existing.length === 0) {
+        createRoomTestCaseEditor(list);
+    } else {
+        existing.forEach((testCase) => {
+            createRoomTestCaseEditor(
+                list,
+                String(testCase.input ?? ""),
+                String(testCase.expectedOutput ?? "")
+            );
+        });
     }
 
-    testCases.forEach((testCase, index) => {
-        const card = document.createElement("div");
-        card.className = "room-test-case-item";
+    const actions = document.createElement("div");
+    actions.className = "test-case-actions";
 
-        const heading = document.createElement("h3");
-        heading.textContent = `Test Case ${index + 1}`;
-
-        const inputLabel = document.createElement("p");
-        inputLabel.textContent = "Program Input (stdin)";
-
-        const input = document.createElement("pre");
-        input.textContent = String(testCase.input ?? "");
-
-        const outputLabel = document.createElement("p");
-        outputLabel.textContent = "Expected Output (stdout)";
-
-        const output = document.createElement("pre");
-        output.textContent = String(testCase.expectedOutput ?? "");
-
-        card.append(
-            heading,
-            inputLabel,
-            input,
-            outputLabel,
-            output
-        );
-
-        container.appendChild(card);
+    const addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.textContent = "+ Add Test Case";
+    addBtn.addEventListener("click", () => {
+        createRoomTestCaseEditor(list);
+        setRoomTestCaseMessage("");
     });
+
+    const saveBtn = document.createElement("button");
+    saveBtn.type = "button";
+    saveBtn.textContent = "Save Changes";
+    saveBtn.addEventListener("click", async () => {
+        if (!currentRoom) return;
+
+        let cases;
+
+        try {
+            cases = collectRoomTestCaseEditors(list);
+        } catch (error) {
+            setRoomTestCaseMessage(error.message, true);
+            return;
+        }
+
+        saveBtn.disabled = true;
+        saveBtn.textContent = "Saving...";
+
+        try {
+            await updateDoc(doc(db, "rooms", currentRoom.id), {
+                testCases: cases
+            });
+
+            currentRoom.testCases = cases;
+            renderRoomTestCaseEditor(cases);
+
+            setRoomTestCaseMessage(
+                `Saved ${cases.length} test case${cases.length === 1 ? "" : "s"}.`
+            );
+        } catch (error) {
+            console.error("Error saving test cases:", error);
+            setRoomTestCaseMessage(
+                "Could not save test cases. Please try again.",
+                true
+            );
+            saveBtn.disabled = false;
+            saveBtn.textContent = "Save Changes";
+        }
+    });
+
+    actions.append(addBtn, saveBtn);
+    container.appendChild(actions);
 }
 
 /* =========================
@@ -408,6 +540,7 @@ window.openRoom = async function (roomId) {
             [];
 
         displayRoomTestCases(savedTestCases);
+        setRoomTestCaseMessage("");
 
         if (rubricDetails) {
             rubricDetails.replaceChildren();
