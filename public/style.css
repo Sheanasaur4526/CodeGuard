@@ -1,4 +1,3 @@
-
 /* =====================================
    CODEGUARD STUDENT SMART IDE
    ===================================== */
@@ -1283,4 +1282,97 @@ body.teacher-page {
     .test-results-container {
         max-height: 240px;
     }
+}
+
+/* Edit button + header for the room's Test Cases card */
+.room-test-case-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.room-test-case-header h2 {
+    margin: 0;
+}
+
+#roomTestCaseMessage {
+    min-height: 1.2em;
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+/* Teacher's test cases on the student dashboard */
+.activity-test-cases {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.activity-test-case {
+    padding: 10px 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.activity-test-case h5 {
+    margin: 0 0 8px;
+    color: #bcd4ff;
+    font-size: 13px;
+}
+
+.activity-test-case .test-case-label {
+    display: block;
+    margin: 6px 0 3px;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.activity-test-case pre {
+    margin: 0 0 4px;
+    padding: 8px 10px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: var(--bg);
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.test-cases-description {
+    color: var(--muted);
+}
+
+
+.submission-item {
+    padding: 16px;
+    margin: 12px 0;
+    border: 1px solid #0d192e;
+    border-radius: 10px;
+    background: #0d192e;
+}
+
+.submission-item h3 {
+    margin-top: 0;
+}
+
+.submitted-code {
+    padding: 12px;
+    overflow-x: auto;
+    white-space: pre;
+    background: #1e1e1e;
+    color: #0d192e;
+    border-radius: 6px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.submission-item summary {
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 10px;
 }
