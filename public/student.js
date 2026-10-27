@@ -43,6 +43,8 @@ let focusLossCount = 0;
 let fullscreenExitCount = 0;
 let isRunning = false;
 let currentFileName = "main.c";
+// Latest automated test report for the current source code.
+let latestTestReport = null;
 
 // ==================================================
 // ELEMENT HELPERS
@@ -754,9 +756,11 @@ async function runAutomatedTests() {
             ? currentFileName
             : "main.c";
 
-        let passed = 0;
-        let failed = 0;
-        let errors = 0;
+       let passed = 0;
+let failed = 0;
+let errors = 0;
+
+const detailedResults = [];
 
         if (testResultsSummary) {
             testResultsSummary.textContent =
@@ -890,7 +894,16 @@ async function runAutomatedTests() {
                 errors++;
             }
 
-            renderTestResult(i, result);
+            // Keep a copy for the submission and teacher grading.
+detailedResults.push({
+    input: result.input,
+    expectedOutput: result.expectedOutput,
+    actualOutput: result.actualOutput,
+    status: result.status,
+    message: result.message
+});
+
+renderTestResult(i, result);
 
             if (testResultsSummary) {
                 testResultsSummary.textContent =
@@ -901,6 +914,17 @@ async function runAutomatedTests() {
         const percentage = Math.round(
             (passed / testCases.length) * 100
         );
+        // Save the report together with the exact code that was tested.
+latestTestReport = {
+    sourceCode,
+    totalTests: testCases.length,
+    passedTests: passed,
+    failedTests: failed,
+    errorTests: errors,
+    correctnessScore: percentage,
+    testResults: detailedResults,
+    testedAt: new Date().toISOString()
+};
 
         if (testResultsSummary) {
             testResultsSummary.textContent =
@@ -1105,54 +1129,123 @@ if (document.readyState === "loading") {
     initializeStudentUI();
 }
 
- // submit
+
+/* =========================================================
+   SUBMIT STUDENT CODE AND AUTOMATED TEST RESULTS
+========================================================= */
+
 const submitBtn = document.getElementById("submitBtn");
 
 if (submitBtn) {
     submitBtn.addEventListener("click", async () => {
+        // Prevent repeated submissions while processing.
         if (submitBtn.disabled) return;
 
         const roomCode = (
             localStorage.getItem("roomCode") || ""
-        ).toUpperCase();
+        ).trim().toUpperCase();
 
-        const username =
-            localStorage.getItem("username") || "";
+        const username = (
+            localStorage.getItem("username") || ""
+        ).trim();
 
+        // Find the student's code editor.
         const editor =
             document.getElementById("codeEditor") ||
             document.getElementById("editor") ||
             document.querySelector("textarea");
 
-        // Silently stop if required data is missing
         if (!roomCode || !username || !editor || !editor.value.trim()) {
+            alert("Missing room, username, or source code.");
             return;
         }
 
         const sourceCode = editor.value;
-        const originalText = submitBtn.innerHTML;
+        const originalText = submitBtn.textContent;
+
+        // Require test results for the exact code being submitted.
+        if (
+            typeof latestTestReport === "undefined" ||
+            !latestTestReport ||
+            latestTestReport.sourceCode !== sourceCode
+        ) {
+            alert(
+                "Please run Automated Tests on your latest code before submitting."
+            );
+            return;
+        }
 
         try {
             submitBtn.disabled = true;
             submitBtn.textContent = "Submitting...";
 
-            await addDoc(collection(db, "submissions"), {
-                roomCode: roomCode,
-                username: username,
+            // Prepare the submission document.
+            const submissionData = {
+                roomCode,
+                username,
                 fileName: "main.c",
-                sourceCode: sourceCode,
+                sourceCode,
+
+                // Automated test results
+                totalTests: latestTestReport.totalTests ?? 0,
+                passedTests: latestTestReport.passedTests ?? 0,
+                failedTests: latestTestReport.failedTests ?? 0,
+                errorTests: latestTestReport.errorTests ?? 0,
+                correctnessScore:
+                    latestTestReport.correctnessScore ?? 0,
+                testResults: latestTestReport.testResults ?? [],
+                testedAt: latestTestReport.testedAt ?? null,
+
+                // Teacher grading fields
+                codeQualityScore: null,
+                efficiencyScore: null,
+                styleScore: null,
+
+                // Final grading fields
+                finalGrade: null,
+                classification: "Pending Teacher Review",
+                gradingStatus: "PENDING_TEACHER_REVIEW",
+
+                // Submission status and timestamp
                 status: "SUBMITTED",
                 submittedAt: serverTimestamp()
-            });
+            };
+
+            // Save the submission to Firestore.
+            const submissionRef = await addDoc(
+                collection(db, "submissions"),
+                submissionData
+            );
+
+            console.log(
+                "Submission saved successfully:",
+                submissionRef.id
+            );
 
             submitBtn.textContent = "✓ Submitted";
 
+            alert(
+                "Code and automated test results submitted successfully."
+            );
+
         } catch (error) {
             console.error("Submission error:", error);
+
             submitBtn.textContent = originalText;
+
+            alert(
+                "Failed to submit. Please check your connection, " +
+                "Firebase configuration, and Firestore permissions."
+            );
 
         } finally {
             submitBtn.disabled = false;
+
+            // Restore the button after the request completes.
+            // Keep the success label until the next edit or submission.
+            if (submitBtn.textContent === "Submitting...") {
+                submitBtn.textContent = originalText;
+            }
         }
     });
 }

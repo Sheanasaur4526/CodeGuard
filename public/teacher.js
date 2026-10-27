@@ -1047,3 +1047,560 @@ if (saveTestCasesBtn && testCasesContainer) {
         }
     });
 }
+
+
+window.showSubmissionsPage = async function () {
+    // Hide other dashboard pages.
+    [
+        "dashboardPage",
+        "roomsPage",
+        "roomDashboard",
+        "activitiesPage",
+        "submissionsPage"
+    ].forEach((id) => {
+        const element = document.getElementById(id);
+        if (element) element.style.display = "none";
+    });
+
+    const page = document.getElementById("submissionsPage");
+
+    if (!page) {
+        alert("Submissions page is missing from teacher.html.");
+        return;
+    }
+
+    page.style.display = "block";
+
+    const title = document.getElementById("pageTitle");
+    if (title) title.textContent = "Student Submissions";
+
+    await window.loadTeacherSubmissions();
+};
+
+
+window.loadTeacherSubmissions = async function () {
+    const list = document.getElementById("teacherSubmissionList");
+    const message = document.getElementById("submissionsMessage");
+
+    if (!list) return;
+
+    const teacher = auth.currentUser;
+
+    if (!teacher) {
+        list.textContent = "Please log in as a teacher.";
+        return;
+    }
+
+    list.textContent = "Loading submitted programs...";
+    if (message) message.textContent = "";
+
+    try {
+        // Find rooms belonging to the logged-in teacher.
+        const roomsQuery = query(
+            collection(db, "rooms"),
+            where("teacherId", "==", teacher.uid)
+        );
+
+        const roomsSnapshot = await getDocs(roomsQuery);
+
+        
+const roomCodes = new Set();
+const roomOptions = [];
+
+roomsSnapshot.forEach((roomDoc) => {
+    const room = roomDoc.data();
+
+    if (room.roomCode) {
+        const code = String(room.roomCode).trim().toUpperCase();
+
+        roomCodes.add(code);
+
+        roomOptions.push({
+            code,
+            name: room.roomName || room.title || room.activityTitle || code
+        });
+    }
+});
+
+// Populate the room filter.
+const roomFilter = document.getElementById("submissionRoomFilter");
+
+if (roomFilter) {
+    const previousSelection = roomFilter.value;
+
+    roomFilter.replaceChildren();
+
+    const allOption = document.createElement("option");
+    allOption.value = "";
+    allOption.textContent = "All Rooms";
+    roomFilter.appendChild(allOption);
+
+    roomOptions.forEach((room) => {
+        const option = document.createElement("option");
+        option.value = room.code;
+        option.textContent = `${room.name} (${room.code})`;
+        roomFilter.appendChild(option);
+    });
+
+    // Preserve the selected room when refreshing.
+    roomFilter.value = roomCodes.has(previousSelection)
+        ? previousSelection
+        : "";
+
+    // Register the change handler only once.
+    if (roomFilter.dataset.listenerAdded !== "true") {
+        roomFilter.addEventListener("change", () => {
+            window.loadTeacherSubmissions();
+        });
+
+        roomFilter.dataset.listenerAdded = "true";
+    }
+}
+
+
+        if (roomCodes.size === 0) {
+            list.textContent = "You have not created any rooms yet.";
+            return;
+        }
+
+        // Read submitted work and filter to this teacher's rooms.
+        const snapshot = await getDocs(
+            collection(db, "submissions")
+        );
+
+        const selectedRoomCode = (
+    document.getElementById("submissionRoomFilter")?.value || ""
+).trim().toUpperCase();
+
+        const submissions = [];
+
+        snapshot.forEach((submissionDoc) => {
+            const data = submissionDoc.data();
+
+            const roomCode = String(data.roomCode || "").toUpperCase();
+
+            // Only show actual submitted records for the teacher's rooms.
+            
+if (
+    roomCodes.has(roomCode) &&
+    (!selectedRoomCode || roomCode === selectedRoomCode) &&
+    (
+        data.status === "SUBMITTED" ||
+        data.submittedAt ||
+        data.sourceCode ||
+        data.code
+    )
+) {
+    submissions.push({
+        id: submissionDoc.id,
+        ...data
+    });
+}
+
+        });
+
+        // Sort newest first.
+        submissions.sort((a, b) => {
+            const aTime = a.submittedAt?.toMillis?.() || 0;
+            const bTime = b.submittedAt?.toMillis?.() || 0;
+            return bTime - aTime;
+        });
+
+        list.replaceChildren();
+
+        if (submissions.length === 0) {
+            list.textContent =
+                "No students have submitted their work yet.";
+            return;
+        }
+
+        submissions.forEach((submission) => {
+            const card = document.createElement("div");
+
+            card.style.cssText = `
+                border: 1px solid #ccc;
+                border-radius: 8px;
+                padding: 14px;
+                margin: 12px 0;
+            `;
+
+            const name = document.createElement("h3");
+            name.textContent =
+                submission.username ||
+                submission.studentName ||
+                submission.studentEmail ||
+                "Unknown student";
+
+            const room = document.createElement("p");
+            room.textContent =
+                "Room: " + (submission.roomCode || "N/A");
+
+            const submitted = document.createElement("p");
+            submitted.textContent = "Status: Submitted";
+
+            const grade = document.createElement("p");
+            grade.textContent =
+                submission.finalGrade != null
+                    ? `Final grade: ${submission.finalGrade}%`
+                    : "Final grade: Pending teacher review";
+
+            const showButton = document.createElement("button");
+            showButton.type = "button";
+            showButton.textContent = "Show";
+
+            showButton.addEventListener("click", () => {
+                window.showSubmissionDetails(submission);
+            });
+
+            card.append(name, room, submitted, grade, showButton);
+            list.appendChild(card);
+        });
+
+        if (message) {
+            message.textContent =
+                `${submissions.length} submission(s) found.`;
+        }
+    } catch (error) {
+        console.error("Could not load teacher submissions:", error);
+
+        list.textContent =
+            "Unable to load submissions. Check the browser console and Firestore permissions.";
+
+        if (message) message.textContent = error.message;
+    }
+};
+
+
+
+window.showSubmissionDetails = async function (submission) {
+    const details = document.getElementById("submissionDetails");
+    if (!details) return;
+
+    details.replaceChildren();
+
+    const addText = (tag, value) => {
+        const element = document.createElement(tag);
+        element.textContent = value;
+        details.appendChild(element);
+        return element;
+    };
+
+    const addScoreInput = (id, label, value) => {
+        const wrapper = document.createElement("div");
+        wrapper.style.cssText = "margin: 12px 0;";
+
+        const labelElement = document.createElement("label");
+        labelElement.htmlFor = id;
+        labelElement.textContent = label;
+        labelElement.style.display = "block";
+
+        const input = document.createElement("input");
+        input.id = id;
+        input.type = "number";
+        input.min = "0";
+        input.max = "100";
+        input.step = "1";
+        input.value = value ?? 80;
+        input.style.cssText =
+            "width: 100%; max-width: 240px; padding: 8px;";
+
+        wrapper.append(labelElement, input);
+        details.appendChild(wrapper);
+
+        return input;
+    };
+
+    addText(
+        "h3",
+        submission.username ||
+        submission.studentName ||
+        "Student submission"
+    );
+
+    addText("p", `Room: ${submission.roomCode || "N/A"}`);
+
+    addText(
+        "p",
+        `Tests passed: ${submission.passedTests ?? 0} / ${submission.totalTests ?? 0}`
+    );
+
+    // Retrieve the rubric belonging to this submission's room.
+    let roomData = null;
+
+    try {
+        const roomsQuery = query(
+            collection(db, "rooms"),
+            where("roomCode", "==", String(submission.roomCode || "").toUpperCase())
+        );
+
+        const roomSnapshot = await getDocs(roomsQuery);
+
+        if (!roomSnapshot.empty) {
+            roomData = roomSnapshot.docs[0].data();
+        }
+    } catch (error) {
+        console.error("Could not load room rubric:", error);
+    }
+
+    addText("h4", "Room Rubric");
+
+    const rubric = roomData?.rubric ?? roomData?.rubrics;
+
+    if (typeof rubric === "string") {
+        addText("p", rubric);
+    } else if (rubric && typeof rubric === "object") {
+        Object.entries(rubric).forEach(([key, value]) => {
+            const description =
+                typeof value === "object" && value !== null
+                    ? JSON.stringify(value)
+                    : String(value);
+
+            addText(
+                "p",
+                `${key}: ${description}`
+            );
+        });
+    } else {
+        addText(
+            "p",
+            "No rubric details were found for this room. Using the default grading criteria below."
+        );
+    }
+
+    // Correctness is calculated from the automated tests.
+    const correctnessPercent =
+        Number(submission.correctnessScore) ||
+        (
+            submission.totalTests > 0
+                ? (submission.passedTests / submission.totalTests) * 100
+                : 0
+        );
+
+    const weights = {
+        correctness: 50,
+        codeQuality: 25,
+        efficiency: 15,
+        style: 10
+    };
+
+    const correctnessPoints =
+        (correctnessPercent / 100) * weights.correctness;
+
+    addText("h4", "Automated Correctness");
+
+    addText(
+        "p",
+        `Test pass rate: ${correctnessPercent.toFixed(2)}%`
+    );
+
+    addText(
+        "p",
+        `Correctness contribution: ${correctnessPoints.toFixed(2)} / ${weights.correctness} points`
+    );
+
+    // Display submitted C source code.
+    addText("h4", "Source Code");
+
+    const pre = document.createElement("pre");
+    pre.style.cssText = `
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        overflow-x: auto;
+        padding: 14px;
+        background: #111827;
+        color: white;
+        border-radius: 8px;
+    `;
+
+    const code = document.createElement("code");
+    code.textContent =
+        submission.sourceCode ??
+        submission.code ??
+        submission.submittedCode ??
+        "Source code was not saved in this submission.";
+
+    pre.appendChild(code);
+    details.appendChild(pre);
+
+    // Show detailed automated test results.
+    addText("h4", "Detailed Test Results");
+
+    if (
+        Array.isArray(submission.testResults) &&
+        submission.testResults.length > 0
+    ) {
+        submission.testResults.forEach((result, index) => {
+            addText(
+                "p",
+                `Test ${index + 1}: ${
+                    result.status ||
+                    (result.passed ? "PASSED" : "FAILED")
+                }`
+            );
+
+            addText(
+                "p",
+                `Input: ${result.input ?? result.programInput ?? ""}`
+            );
+
+            addText(
+                "p",
+                `Expected: ${
+                    result.expectedOutput ?? result.expected ?? ""
+                }`
+            );
+
+            addText(
+                "p",
+                `Actual: ${
+                    result.actualOutput ?? result.actual ?? ""
+                }`
+            );
+        });
+    } else {
+        addText("p", "No detailed test results were saved.");
+    }
+
+    // Teacher assigns scores from 0 to 100 for each criterion.
+    addText("h4", "Teacher Grading");
+
+    addText(
+        "p",
+        "Enter a score from 0 to 100 for each criterion. Each score is weighted automatically."
+    );
+
+    const qualityInput = addScoreInput(
+        "gradeCodeQuality",
+        "Code Quality (25% weight)",
+        submission.codeQualityScore
+    );
+
+    const efficiencyInput = addScoreInput(
+        "gradeEfficiency",
+        "Efficiency (15% weight)",
+        submission.efficiencyScore
+    );
+
+    const styleInput = addScoreInput(
+        "gradeStyle",
+        "Style (10% weight)",
+        submission.styleScore
+    );
+
+    const gradePreview = addText("h3", "Final Grade: —");
+
+    const calculateGrade = () => {
+        const quality = Number(qualityInput.value);
+        const efficiency = Number(efficiencyInput.value);
+        const style = Number(styleInput.value);
+
+        const values = [quality, efficiency, style];
+
+        if (
+            values.some(
+                (value) => !Number.isFinite(value) || value < 0 || value > 100
+            )
+        ) {
+            gradePreview.textContent =
+                "Final Grade: Enter valid scores from 0 to 100.";
+            return null;
+        }
+
+        const qualityPoints = quality * weights.codeQuality / 100;
+        const efficiencyPoints = efficiency * weights.efficiency / 100;
+        const stylePoints = style * weights.style / 100;
+
+        const finalGrade =
+            correctnessPoints +
+            qualityPoints +
+            efficiencyPoints +
+            stylePoints;
+
+        gradePreview.textContent =
+            `Final Grade: ${finalGrade.toFixed(2)} / 100`;
+
+        return {
+            quality,
+            efficiency,
+            style,
+            finalGrade: Number(finalGrade.toFixed(2))
+        };
+    };
+
+    [qualityInput, efficiencyInput, styleInput].forEach((input) => {
+        input.addEventListener("input", calculateGrade);
+    });
+
+    calculateGrade();
+
+    const saveButton = document.createElement("button");
+    saveButton.type = "button";
+    saveButton.textContent = "Save Grade";
+    saveButton.style.cssText =
+        "padding: 10px 18px; margin-top: 12px; cursor: pointer;";
+
+    saveButton.addEventListener("click", async () => {
+        if (!submission.id) {
+            alert("Cannot save: submission document ID is missing.");
+            return;
+        }
+
+        const scores = calculateGrade();
+
+        if (!scores) {
+            alert("Enter valid scores between 0 and 100.");
+            return;
+        }
+
+        const classification =
+            scores.finalGrade >= 90 && correctnessPercent >= 85
+                ? "Excellent"
+                : scores.finalGrade >= 80 && correctnessPercent >= 70
+                    ? "Good"
+                    : scores.finalGrade >= 60
+                        ? "Satisfactory"
+                        : "Needs Improvement";
+
+        try {
+            saveButton.disabled = true;
+            saveButton.textContent = "Saving...";
+
+            await updateDoc(
+                doc(db, "submissions", submission.id),
+                {
+                    correctnessScore: Number(correctnessPercent.toFixed(2)),
+                    correctnessPoints: Number(correctnessPoints.toFixed(2)),
+                    codeQualityScore: scores.quality,
+                    efficiencyScore: scores.efficiency,
+                    styleScore: scores.style,
+                    finalGrade: scores.finalGrade,
+                    classification,
+                    gradingStatus: "GRADED",
+                    gradedAt: serverTimestamp(),
+                    gradedBy: auth.currentUser?.uid ?? null
+                }
+            );
+
+            Object.assign(submission, {
+                correctnessScore: Number(correctnessPercent.toFixed(2)),
+                codeQualityScore: scores.quality,
+                efficiencyScore: scores.efficiency,
+                styleScore: scores.style,
+                finalGrade: scores.finalGrade,
+                classification,
+                gradingStatus: "GRADED"
+            });
+
+            addText("p", `Saved successfully. Classification: ${classification}`);
+            saveButton.textContent = "✓ Grade Saved";
+
+        } catch (error) {
+            console.error("Could not save grade:", error);
+            alert("Unable to save grade. Check Firestore permissions.");
+            saveButton.disabled = false;
+            saveButton.textContent = "Save Grade";
+        }
+    });
+
+    details.appendChild(saveButton);
+};

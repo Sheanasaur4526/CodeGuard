@@ -1376,3 +1376,148 @@ body.teacher-page {
     font-weight: bold;
     margin-top: 10px;
 }
+
+/* ===================================
+   CODEGUARD DARK THEME
+=================================== */
+
+#submissionsPage {
+    color: #e5edf7;
+    background: #0b1220;
+}
+
+#submissionsPage > .card,
+#submissionsPage .submission-layout > .card {
+    background: #111c2e !important;
+    color: #e5edf7 !important;
+    border: 1px solid #263750 !important;
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 20%);
+}
+
+#submissionsPage h2,
+#submissionsPage h3,
+#submissionsPage h4,
+#submissionDetails {
+    color: #e5edf7;
+}
+
+#submissionsPage p,
+#submissionsPage label {
+    color: #a8bad0;
+}
+
+.submission-filter {
+    background: #0d1728 !important;
+    border: 1px solid #263750 !important;
+    border-radius: 12px;
+}
+
+#submissionRoomFilter,
+#submissionDetails input[type="number"] {
+    background: #0b1525 !important;
+    color: #f1f5f9 !important;
+    border: 1px solid #344861 !important;
+    border-radius: 8px;
+}
+
+#submissionRoomFilter option {
+    background: #111c2e;
+    color: #f1f5f9;
+}
+
+#teacherSubmissionList > div {
+    background: #0d192b !important;
+    border-color: #263750 !important;
+    color: #e5edf7 !important;
+}
+
+#teacherSubmissionList > div:hover {
+    border-color: #10b981 !important;
+    background: #102438 !important;
+}
+
+#submissionsPage button,
+#submissionDetails button {
+    background: #087f68;
+    border-color: #10b981;
+    color: #ffffff;
+    border-radius: 8px;
+}
+
+#submissionsPage button:hover,
+#submissionDetails button:hover {
+    background: #059669;
+}
+
+#submissionDetails pre {
+    background: #080f1c !important;
+    color: #d1fae5 !important;
+    border: 1px solid #263750;
+    border-radius: 10px;
+}
+
+#submissionDetails code {
+    color: #d1fae5;
+}
+
+#submissionDetails h4 {
+    border-bottom-color: #263750;
+}
+
+#submissionDetails h3:last-of-type {
+    background: #063c35;
+    border-color: #087f68;
+    color: #6ee7b7;
+}
+
+#submissionsMessage {
+    color: #a8bad0;
+}
+
+.submission-layout {
+    gap: 20px;
+}
+
+@media (max-width: 900px) {
+    .submission-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+/* Student submissions: display list and details side by side */
+#submissionsPage .submission-layout {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    gap: 20px;
+    align-items: start;
+    width: 100%;
+}
+
+/* Prevent either card from forcing the other below */
+#submissionsPage .submission-layout > .card {
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+}
+
+/* Keep long code inside the details panel */
+#submissionDetails {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+#submissionDetails pre {
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: pre;
+    box-sizing: border-box;
+}
+
+/* Stack cards only on smaller screens */
+@media (max-width: 768px) {
+    #submissionsPage .submission-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+

@@ -23,8 +23,14 @@
         <ul>
             <li onclick="showCreateRoom()">➕ Create Room</li>
             <li onclick="showRooms()">🏫 Rooms</li>
-            <li>📁 Activities</li>
-            <li>📤 Submissions</li>
+            <li>
+    <a href="#" onclick="showGradesPage(); return false;">
+        📁 Grades
+    </a>
+</li>
+            <li onclick="showSubmissionsPage()" style="cursor: pointer;">
+    📤 Submissions
+</li>
         </ul>
 
     </aside>
@@ -148,6 +154,56 @@
 
             </div>
         </div>
+
+        
+
+<!-- STUDENT SUBMISSIONS PAGE -->
+<section id="submissionsPage" style="display: none;">
+    <div class="card">
+        <h2>Student Submissions</h2>
+        <p>View submitted C programs and automated test results.</p>
+
+        <!-- Room Filter -->
+        <div class="submission-filter">
+            <label for="submissionRoomFilter">
+                Filter submissions by room:
+            </label>
+
+            <select id="submissionRoomFilter">
+                <option value="">All Rooms</option>
+            </select>
+
+            <button
+                type="button"
+                onclick="loadTeacherSubmissions()"
+            >
+                Refresh Submissions
+            </button>
+        </div>
+
+        <p id="submissionsMessage" role="status"></p>
+
+        <!-- Submission List and Details -->
+        <div class="submission-layout">
+            <div class="card">
+                <h3>Submitted Programs</h3>
+
+                <div id="teacherSubmissionList">
+                    Submissions will appear here.
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Submission Details</h3>
+
+                <div id="submissionDetails">
+                    Select a submission and click Show.
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 
         <!-- ROOMS PAGE -->
         <section id="roomsPage" style="display: none;">
