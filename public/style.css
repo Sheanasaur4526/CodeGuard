@@ -1521,3 +1521,114 @@ body.teacher-page {
     }
 }
 
+
+/* =====================================================
+   SUBMISSIONS PAGE: SPACING ONLY
+   Same text and layout as before; only spacing and font
+   sizes change. Every rule starts with #submissionsPage,
+   so no other page is affected.
+===================================================== */
+
+#submissionsPage {
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+#submissionsPage h2 {
+    margin: 0 0 8px;
+}
+
+#submissionsPage > .card > p {
+    margin: 0 0 14px;
+}
+
+#submissionsPage .submission-filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+}
+
+#submissionsPage #submissionsMessage {
+    margin: 14px 0;
+}
+
+#submissionsPage .submission-layout > .card > h3 {
+    margin: 0 0 24px;
+    padding: 0;
+    border-bottom: 0;
+}
+
+/* ---------- list of submitted programs ---------- */
+
+#submissionsPage #teacherSubmissionList > div {
+    padding: 16px 18px !important;
+    margin: 0 0 14px !important;
+}
+
+#submissionsPage #teacherSubmissionList h3 {
+    margin: 0 0 8px;
+}
+
+#submissionsPage #teacherSubmissionList p {
+    margin: 4px 0;
+}
+
+#submissionsPage #teacherSubmissionList button {
+    margin-top: 12px;
+}
+
+/* ---------- submission details ---------- */
+
+/* Lines inside a group sit close together... */
+#submissionsPage #submissionDetails h3 {
+    margin: 0 0 2px;
+}
+
+#submissionsPage #submissionDetails p {
+    margin: 2px 0;
+    line-height: 1.6;
+}
+
+/* ...and a heading sits right above its own lines. */
+#submissionsPage #submissionDetails h4 {
+    margin: 26px 0 2px;
+    padding: 0;
+    border-bottom: 0;
+    line-height: 1.5;
+}
+
+#submissionsPage #submissionDetails pre {
+    margin: 8px 0 0;
+    padding: 14px 16px;
+    line-height: 1.55;
+}
+
+/* One blank line between groups (each test is a group). */
+#submissionsPage #submissionDetails p.sd-test-title {
+    margin-top: 26px;
+}
+
+#submissionsPage #submissionDetails h4 + p.sd-test-title {
+    margin-top: 2px;
+}
+
+/* ---------- teacher grading ---------- */
+
+#submissionsPage #submissionDetails label {
+    margin-bottom: 6px;
+}
+
+#submissionsPage #submissionDetails input[type="number"] {
+    padding: 10px 12px;
+}
+
+#submissionsPage #submissionDetails h3:last-of-type {
+    margin: 26px 0 8px;
+    padding: 12px 14px;
+}
+
+#submissionsPage #submissionDetails button {
+    margin-top: 14px !important;
+}

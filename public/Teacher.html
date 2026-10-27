@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CodeGuard Teacher Dashboard</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body class="teacher-page">
 
@@ -23,10 +22,8 @@
         <ul>
             <li onclick="showCreateRoom()">➕ Create Room</li>
             <li onclick="showRooms()">🏫 Rooms</li>
-            <li>
-    <a href="#" onclick="showGradesPage(); return false;">
-        📁 Grades
-    </a>
+            <li onclick="showGradesPage()" style="cursor: pointer;">
+    📁 Grades
 </li>
             <li onclick="showSubmissionsPage()" style="cursor: pointer;">
     📤 Submissions
@@ -289,7 +286,7 @@
     </main>
 </div>
 
-<script type="module" src="teacher.js"></script>
+<script type="module" src="teacher.js?v=3"></script>
 
 </body>
 </html>

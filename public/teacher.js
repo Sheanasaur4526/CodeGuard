@@ -30,12 +30,22 @@ let studentListener = null;
 
 let currentRoom = null;
 
+// Pages that sit outside the room/dashboard flow. Every navigation
+// function calls this so they never stay visible on the wrong tab.
+function hideExtraPages() {
+    ["submissionsPage", "activitiesPage", "gradesPage"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = "none";
+    });
+}
+
 /* =========================
    PAGE NAVIGATION
 ========================= */
 
 window.showDashboard = function () {
     stopRoomListeners();
+    hideExtraPages();
 
     document.getElementById("pageTitle").textContent =
         "Teacher Dashboard";
@@ -47,6 +57,7 @@ window.showDashboard = function () {
 
 window.showCreateRoom = function () {
     stopRoomListeners();
+    hideExtraPages();
 
     document.getElementById("pageTitle").textContent = "Create Room";
 
@@ -57,6 +68,7 @@ window.showCreateRoom = function () {
 
 window.showRooms = async function () {
     stopRoomListeners();
+    hideExtraPages();
 
     document.getElementById("pageTitle").textContent = "My Rooms";
 
@@ -579,6 +591,7 @@ window.openRoom = async function (roomId) {
             return;
         }
 
+        hideExtraPages();
         dashboardPage.style.display = "none";
         roomsPage.style.display = "none";
         roomDashboard.style.display = "block";
@@ -1050,6 +1063,8 @@ if (saveTestCasesBtn && testCasesContainer) {
 
 
 window.showSubmissionsPage = async function () {
+    stopRoomListeners();
+
     // Hide other dashboard pages.
     [
         "dashboardPage",
@@ -1077,6 +1092,12 @@ window.showSubmissionsPage = async function () {
     await window.loadTeacherSubmissions();
 };
 
+
+// The Grades link opens the submissions list, where each student's
+// final grade is entered and saved.
+window.showGradesPage = function () {
+    return window.showSubmissionsPage();
+};
 
 window.loadTeacherSubmissions = async function () {
     const list = document.getElementById("teacherSubmissionList");
@@ -1278,9 +1299,10 @@ window.showSubmissionDetails = async function (submission) {
 
     details.replaceChildren();
 
-    const addText = (tag, value) => {
+    const addText = (tag, value, className) => {
         const element = document.createElement(tag);
         element.textContent = value;
+        if (className) element.className = className;
         details.appendChild(element);
         return element;
     };
@@ -1435,7 +1457,8 @@ window.showSubmissionDetails = async function (submission) {
                 `Test ${index + 1}: ${
                     result.status ||
                     (result.passed ? "PASSED" : "FAILED")
-                }`
+                }`,
+                "sd-test-title"
             );
 
             addText(
