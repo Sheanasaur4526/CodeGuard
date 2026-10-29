@@ -628,7 +628,10 @@ function checkTestOutput(actualOutput, expectedOutput) {
         `(?:^|\\s|:)${escapedExpected}$`
     );
 
-    return answerAtEnd.test(lastLine);
+    // Multi-line answers: a prompt such as "enter n:" may share a line
+    // with the first line of output. Accept when the whole output ends
+    // with the expected text, starting at a word boundary.
+    return answerAtEnd.test(actual);
 }
 
 
