@@ -1632,3 +1632,9 @@ body.teacher-page {
 #submissionsPage #submissionDetails button {
     margin-top: 14px !important;
 }
+
+/* Student editor: keep the line numbers in step with the code when scrolling */
+.editor-wrapper .line-numbers {
+    overflow: hidden;      /* makes the column scrollable by script, so it can follow the code */
+    padding-bottom: 40px;  /* lets it scroll as far as the code box, which has a scrollbar */
+}

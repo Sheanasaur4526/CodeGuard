@@ -140,6 +140,7 @@ export function runLiveProgram({ api, filename, source, terminal, onEnd }) {
 
         sessionId = result.id;
         input.disabled = false;
+        input.placeholder = "Type your input here and press Enter";
         input.focus();
         if (stopRequested) post(`/session/${sessionId}/kill`).catch(() => {});
 
