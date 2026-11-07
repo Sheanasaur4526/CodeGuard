@@ -2,6 +2,7 @@ console.log("CodeGuard student.js loaded");
 
 import { db } from "./firebase.js";
 import { runLiveProgram } from "./live-terminal.js";
+import { checkIndentation, formatIndentationErrors } from "./indent-check.js";
 
 import {
     collection,
@@ -42,6 +43,7 @@ let tabSwitchCount = 0;
 let focusLossCount = 0;
 let fullscreenExitCount = 0;
 let isRunning = false;
+let loggingOut = false;
 let currentFileName = "main.c";
 // Latest automated test report for the current source code.
 let latestTestReport = null;
@@ -548,6 +550,14 @@ if (runBtn) {
             return;
         }
 
+        const indentErrors = checkIndentation(editor.value);
+
+        if (indentErrors.length) {
+            clearTerminal();
+            writeTerminal(formatIndentationErrors(indentErrors), "error");
+            return;
+        }
+
         isRunning = true;
         runBtn.textContent = "■ Stop";
 
@@ -710,6 +720,30 @@ async function runAutomatedTests() {
 
     if (!COMPILER_API) {
         alert("The C compiler service is not configured.");
+        return;
+    }
+
+    const indentErrors = checkIndentation(editor.value);
+
+    if (indentErrors.length) {
+        clearTerminal();
+        writeTerminal("Tests did not run: fix the indentation first.", "error");
+        writeTerminal(formatIndentationErrors(indentErrors), "error");
+
+        if (testResultsSummary) {
+            testResultsSummary.textContent = "Tests did not run: fix the indentation first";
+        }
+
+        if (testResultsContainer) {
+            const errorText = createResultText(
+                "pre",
+                formatIndentationErrors(indentErrors)
+            );
+            errorText.style.color = "#ff8585";
+            errorText.style.whiteSpace = "pre-wrap";
+            testResultsContainer.replaceChildren(errorText);
+        }
+
         return;
     }
 
@@ -1068,6 +1102,8 @@ async function logViolation(type) {
 }
 
 document.addEventListener("visibilitychange", () => {
+    if (loggingOut) return;
+
     if (document.hidden) {
         tabSwitchCount++;
         updateStatus();
@@ -1076,12 +1112,16 @@ document.addEventListener("visibilitychange", () => {
 });
 
 window.addEventListener("blur", () => {
+    if (loggingOut) return;
+
     focusLossCount++;
     updateStatus();
     void logViolation("WINDOW_FOCUS_LOSS");
 });
 
 document.addEventListener("fullscreenchange", () => {
+    if (loggingOut) return;
+
     if (!document.fullscreenElement) {
         fullscreenExitCount++;
         updateStatus();
@@ -1250,5 +1290,43 @@ if (submitBtn) {
                 submitBtn.textContent = originalText;
             }
         }
+    });
+}
+
+
+// ==================================================
+// LOG OUT
+// ==================================================
+
+const logoutBtn = $("logoutBtn");
+
+if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+        if (!confirm(
+            "Log out of this room? Code you have not submitted will be lost."
+        )) {
+            return;
+        }
+
+        // Do not count leaving the page as a violation.
+        loggingOut = true;
+
+        if (isRunning && liveRun) {
+            liveRun.stop();
+        }
+
+        try {
+            if (document.fullscreenElement) {
+                await document.exitFullscreen();
+            }
+        } catch {
+            // Ignore: we are leaving the page anyway.
+        }
+
+        ["roomCode", "username", "roomDocId"].forEach(key =>
+            localStorage.removeItem(key)
+        );
+
+        window.location.href = "index.html";
     });
 }
