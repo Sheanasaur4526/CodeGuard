@@ -1638,3 +1638,66 @@ body.teacher-page {
     overflow: hidden;      /* makes the column scrollable by script, so it can follow the code */
     padding-bottom: 40px;  /* lets it scroll as far as the code box, which has a scrollbar */
 }
+
+
+/* Rubric editor (Create Room page) */
+.rubric-help {
+    margin: 0 0 12px;
+    font-size: 13px;
+    opacity: 0.8;
+}
+
+.rubric-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.rubric-row input {
+    margin: 0;
+}
+
+.rubric-row .rubric-title {
+    flex: 1;
+    min-width: 0;
+}
+
+.rubric-row .rubric-percent {
+    width: 80px;
+    flex: none;
+}
+
+.rubric-row .rubric-title[readonly] {
+    opacity: 0.75;
+    cursor: not-allowed;
+}
+
+.rubric-row .rubric-remove {
+    width: auto;
+    margin: 0;
+    padding: 8px 12px;
+    flex: none;
+    background: #5a2230;
+}
+
+#rubricTotal {
+    margin: 4px 0 12px;
+    font-weight: 600;
+}
+
+.room-rubric-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+#roomRubricTotal {
+    margin: 4px 0 12px;
+    font-weight: 600;
+}
+
+#roomRubricMessage {
+    margin: 10px 0 0;
+    min-height: 1.2em;
+}

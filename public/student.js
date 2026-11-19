@@ -3,6 +3,7 @@ console.log("CodeGuard student.js loaded");
 import { db } from "./firebase.js";
 import { runLiveProgram } from "./live-terminal.js";
 import { checkIndentation, formatIndentationErrors } from "./indent-check.js";
+import { getRubricItems, formatPercent } from "./rubric.js";
 
 import {
     collection,
@@ -303,16 +304,9 @@ function renderRoomActivity(room) {
     const rubricEl = $("rubricText");
 
     if (rubricEl) {
-        const rubric = room.rubric;
-
-        rubricEl.textContent = rubric
-            ? [
-                `Correctness: ${rubric.correctness ?? "-"}`,
-                `Code Quality: ${rubric.codeQuality ?? "-"}`,
-                `Efficiency: ${rubric.efficiency ?? "-"}`,
-                `Style: ${rubric.style ?? "-"}`
-            ].join("\n")
-            : "No rubric available.";
+        rubricEl.textContent = getRubricItems(room)
+            .map(item => `${item.title}: ${formatPercent(item.percent)}%`)
+            .join("\n");
     }
 }
 

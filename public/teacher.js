@@ -21,6 +21,16 @@ import {
     onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
+import {
+    CORRECTNESS_TITLE,
+    getRubricItems,
+    validateRubricItems,
+    formatPercent,
+    isCorrectness,
+    savedScoreFor,
+    legacyScoreField
+} from "./rubric.js";
+
 /* =========================
    GLOBAL VARIABLES
 ========================= */
@@ -200,6 +210,221 @@ window.generateRoomCode = function () {
 };
 
 /* =========================
+   RUBRIC EDITOR
+========================= */
+
+function updateRubricTotal(container, totalEl) {
+    if (!container || !totalEl) return;
+
+    const total = collectRubricItems(container).reduce(
+        (sum, item) => sum + (Number(item.percent) || 0),
+        0
+    );
+
+    const ok = Math.abs(total - 100) < 0.001;
+
+    totalEl.textContent = ok
+        ? `Total: ${formatPercent(total)}%`
+        : `Total: ${formatPercent(total)}% (must be 100%)`;
+
+    totalEl.style.color = ok ? "#8affb0" : "#ff8585";
+}
+
+function createRubricRow(title, percent, isFixed, onChange) {
+    const row = document.createElement("div");
+    row.className = "rubric-row";
+
+    const titleInput = document.createElement("input");
+    titleInput.className = "rubric-title";
+    titleInput.placeholder = "Rubric title (e.g. Code Quality)";
+    titleInput.value = title;
+    titleInput.maxLength = 40;
+
+    if (isFixed) {
+        titleInput.readOnly = true;
+        titleInput.title = "Correctness is graded from the test cases.";
+    }
+
+    const percentInput = document.createElement("input");
+    percentInput.className = "rubric-percent";
+    percentInput.type = "number";
+    percentInput.min = "1";
+    percentInput.max = "100";
+    percentInput.step = "1";
+    percentInput.placeholder = "%";
+    percentInput.value = percent;
+    percentInput.setAttribute("aria-label", "Percent");
+
+    percentInput.addEventListener("input", onChange);
+
+    row.append(titleInput, percentInput);
+
+    if (isFixed) {
+        row.dataset.fixed = "true";
+    } else {
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "rubric-remove";
+        removeBtn.textContent = "Remove";
+        removeBtn.addEventListener("click", () => {
+            row.remove();
+            onChange();
+        });
+        row.appendChild(removeBtn);
+    }
+
+    return row;
+}
+
+function collectRubricItems(container) {
+    if (!container) return [];
+
+    return Array.from(container.querySelectorAll(".rubric-row")).map(row => ({
+        title: row.querySelector(".rubric-title").value.trim(),
+        percent: row.querySelector(".rubric-percent").value === ""
+            ? NaN
+            : Number(row.querySelector(".rubric-percent").value)
+    }));
+}
+
+// Fills a container with one row per rubric (Correctness first).
+function renderRubricRows(container, totalEl, items, onChange) {
+    if (!container) return;
+
+    const rows = items.map(item =>
+        createRubricRow(
+            item.title,
+            item.percent,
+            isCorrectness(item.title),
+            onChange
+        )
+    );
+
+    rows.sort(
+        (a, b) => (b.dataset.fixed === "true") - (a.dataset.fixed === "true")
+    );
+
+    container.replaceChildren(...rows);
+    updateRubricTotal(container, totalEl);
+}
+
+function addBlankRubricRow(container, totalEl, onChange) {
+    if (!container) return;
+
+    const row = createRubricRow("", "", false, onChange);
+    container.appendChild(row);
+    row.querySelector(".rubric-title").focus();
+    updateRubricTotal(container, totalEl);
+}
+
+// ---- Room dashboard: activity instructions ----
+
+function setRoomActivityMessage(text, isError = false) {
+    const el = document.getElementById("roomActivityMessage");
+    if (!el) return;
+
+    el.textContent = text;
+    el.style.color = isError ? "#ff8585" : "#8affb0";
+}
+
+document.getElementById("roomActivityInput")?.addEventListener("input", () => {
+    setRoomActivityMessage("");
+});
+
+document.getElementById("roomSaveActivityBtn")?.addEventListener("click", async () => {
+    if (!currentRoom?.id) {
+        setRoomActivityMessage("Open a room first.", true);
+        return;
+    }
+
+    const activity = document.getElementById("roomActivityInput").value.trim();
+    const saveBtn = document.getElementById("roomSaveActivityBtn");
+
+    try {
+        saveBtn.disabled = true;
+
+        await updateDoc(doc(db, "rooms", currentRoom.id), { activity });
+
+        currentRoom.activity = activity;
+        setRoomActivityMessage("Activity saved. Students see the change right away.");
+    } catch (error) {
+        console.error("Could not save activity:", error);
+        setRoomActivityMessage(
+            "Could not save the activity. Check your connection and Firestore permissions.",
+            true
+        );
+    } finally {
+        saveBtn.disabled = false;
+    }
+});
+
+// ---- Room dashboard (editable after the room is created) ----
+
+const roomRubricEditor = document.getElementById("roomRubricEditor");
+const roomRubricTotalEl = document.getElementById("roomRubricTotal");
+
+function setRoomRubricMessage(text, isError = false) {
+    const el = document.getElementById("roomRubricMessage");
+    if (!el) return;
+
+    el.textContent = text;
+    el.style.color = isError ? "#ff8585" : "#8affb0";
+}
+
+const onRoomRubricChange = () => {
+    updateRubricTotal(roomRubricEditor, roomRubricTotalEl);
+    setRoomRubricMessage("");
+};
+
+function showRoomRubric(room) {
+    renderRubricRows(
+        roomRubricEditor,
+        roomRubricTotalEl,
+        getRubricItems(room),
+        onRoomRubricChange
+    );
+    setRoomRubricMessage("");
+}
+
+document.getElementById("roomAddRubricBtn")?.addEventListener("click", () => {
+    addBlankRubricRow(roomRubricEditor, roomRubricTotalEl, onRoomRubricChange);
+});
+
+document.getElementById("roomSaveRubricBtn")?.addEventListener("click", async () => {
+    if (!currentRoom?.id) {
+        setRoomRubricMessage("Open a room first.", true);
+        return;
+    }
+
+    const rubricItems = collectRubricItems(roomRubricEditor);
+    const error = validateRubricItems(rubricItems);
+
+    if (error) {
+        setRoomRubricMessage(error, true);
+        return;
+    }
+
+    const saveBtn = document.getElementById("roomSaveRubricBtn");
+
+    try {
+        saveBtn.disabled = true;
+
+        await updateDoc(doc(db, "rooms", currentRoom.id), { rubricItems });
+
+        currentRoom.rubricItems = rubricItems;
+        setRoomRubricMessage("Rubric saved. Students see the change right away.");
+    } catch (saveError) {
+        console.error("Could not save rubric:", saveError);
+        setRoomRubricMessage(
+            "Could not save the rubric. Check your connection and Firestore permissions.",
+            true
+        );
+    } finally {
+        saveBtn.disabled = false;
+    }
+});
+
+/* =========================
    SAVE ROOM
 ========================= */
 
@@ -213,30 +438,11 @@ window.saveRoom = async function () {
     const roomTitle = document.getElementById("roomTitle")
         .value.trim();
 
-    const activity = document.getElementById("activityInput")?.value || "";
-
-    // Get test cases entered in the Test Cases section.
-    let testCases = window.codeGuardTestCases || [];
-
-    if (
-        testCasesContainer &&
-        testCasesContainer.querySelectorAll(".test-case-item").length > 0
-    ) {
-        try {
-            testCases = collectTestCases();
-            window.codeGuardTestCases = testCases;
-        } catch (error) {
-            alert(error.message);
-            return;
-        }
-    }
-
-    const rubric = {
-        correctness: document.getElementById("rubric1").value,
-        codeQuality: document.getElementById("rubric2").value,
-        efficiency: document.getElementById("rubric3").value,
-        style: document.getElementById("rubric4").value
-    };
+    // The activity, test cases and rubrics are added inside the room
+    // after it is created, so a new room starts with these defaults.
+    const activity = "";
+    const testCases = [];
+    const rubricItems = [{ title: CORRECTNESS_TITLE, percent: 100 }];
 
     if (!roomCode) {
         alert("Generate a room code first!");
@@ -249,41 +455,31 @@ window.saveRoom = async function () {
     }
 
     try {
-        await addDoc(collection(db, "rooms"), {
+        const newRoom = await addDoc(collection(db, "rooms"), {
             teacherId: teacher.uid,
             teacherEmail: teacher.email || "",
             roomCode,
             roomTitle,
             activity,
             testCases,
-            rubric,
+            rubricItems,
             createdAt: serverTimestamp()
         });
 
-        alert("Room created successfully!");
+        alert(
+            "Room created successfully! Add the activity, test cases " +
+            "and rubrics inside the room."
+        );
 
         document.getElementById("roomCode").value = "";
         document.getElementById("roomTitle").value = "";
-        document.getElementById("activityInput").value = "";
-
-        document.getElementById("rubric1").value = "";
-        document.getElementById("rubric2").value = "";
-        document.getElementById("rubric3").value = "";
-        document.getElementById("rubric4").value = "";
-
-        // Clear test cases after creating the room.
-        if (testCasesContainer) {
-            testCasesContainer.replaceChildren();
-            renumberTestCases();
-        }
-
-        window.codeGuardTestCases = [];
-
-        if (testCaseMessage) {
-            testCaseMessage.textContent = "";
-        }
 
         await loadRooms();
+
+        // Open the new room so the teacher can set it up right away.
+        if (newRoom?.id) {
+            await window.openRoom(newRoom.id);
+        }
 
     } catch (error) {
         console.error("Failed to save room:", error);
@@ -599,25 +795,14 @@ window.openRoom = async function (roomId) {
         const pageTitle = document.getElementById("pageTitle");
         const selectedRoomTitle =
             document.getElementById("selectedRoomTitle");
-        const activityDetails =
-            document.getElementById("activityDetails");
-        const rubricDetails =
-            document.getElementById("rubricDetails");
+        const activityInput =
+            document.getElementById("roomActivityInput");
 
-        if (pageTitle) {
-            pageTitle.textContent =
-                currentRoom.roomTitle || "Room Dashboard";
+        if (activityInput) {
+            activityInput.value = currentRoom.activity || "";
         }
 
-        if (selectedRoomTitle) {
-            selectedRoomTitle.textContent =
-                currentRoom.roomTitle || "Untitled Room";
-        }
-
-        if (activityDetails) {
-            activityDetails.textContent =
-                currentRoom.activity || "No activity available.";
-        }
+        setRoomActivityMessage("");
 
         // Display saved test cases from the Firestore room document.
         const savedTestCases =
@@ -629,30 +814,7 @@ window.openRoom = async function (roomId) {
         displayRoomTestCases(savedTestCases);
         setRoomTestCaseMessage("");
 
-        if (rubricDetails) {
-            rubricDetails.replaceChildren();
-
-            const rubric = currentRoom.rubric || {};
-
-            [
-                ["Correctness", rubric.correctness],
-                ["Code Quality", rubric.codeQuality],
-                ["Efficiency", rubric.efficiency],
-                ["Style", rubric.style]
-            ].forEach(([label, value]) => {
-                const p = document.createElement("p");
-                const strong = document.createElement("strong");
-
-                strong.textContent = label + ": ";
-
-                p.append(
-                    strong,
-                    document.createTextNode(String(value ?? "-"))
-                );
-
-                rubricDetails.appendChild(p);
-            });
-        }
+        showRoomRubric(currentRoom);
 
         if (currentRoom.roomCode) {
             loadStudents(currentRoom.roomCode);
@@ -895,172 +1057,6 @@ window.deleteRoom = async function (roomId) {
         alert("Failed to delete room.");
     }
 };
-
-/* =========================
-   TEST CASES
-========================= */
-
-const testCasesContainer =
-    document.getElementById("testCasesContainer");
-
-const addTestCaseBtn =
-    document.getElementById("addTestCaseBtn");
-
-const saveTestCasesBtn =
-    document.getElementById("saveTestCasesBtn");
-
-const testCaseCount =
-    document.getElementById("testCaseCount");
-
-const testCaseMessage =
-    document.getElementById("testCaseMessage");
-
-// Add a test case.
-function addTestCase(input = "", expectedOutput = "") {
-    if (!testCasesContainer) return;
-
-    const caseCard = document.createElement("div");
-    caseCard.className = "test-case-item";
-
-    caseCard.innerHTML = `
-        <div class="test-case-item-header">
-            <h3></h3>
-            <button type="button" class="remove-test-case">
-                Remove
-            </button>
-        </div>
-
-        <label>Program Input (stdin)</label>
-        <textarea
-            class="test-input"
-            placeholder="Enter program input..."
-        ></textarea>
-
-        <label>Expected Output (stdout)</label>
-        <textarea
-            class="test-output"
-            placeholder="Enter expected output..."
-        ></textarea>
-    `;
-
-    caseCard.querySelector(".test-input").value = input;
-    caseCard.querySelector(".test-output").value = expectedOutput;
-
-    caseCard
-        .querySelector(".remove-test-case")
-        .addEventListener("click", () => {
-            caseCard.remove();
-            renumberTestCases();
-
-            if (testCaseMessage) {
-                testCaseMessage.textContent = "";
-            }
-        });
-
-    testCasesContainer.appendChild(caseCard);
-
-    renumberTestCases();
-}
-
-// Update test case numbering and count.
-function renumberTestCases() {
-    if (!testCasesContainer) return;
-
-    const items =
-        testCasesContainer.querySelectorAll(".test-case-item");
-
-    items.forEach((item, index) => {
-        item.querySelector("h3").textContent =
-            `Test Case ${index + 1}`;
-    });
-
-    updateTestCaseCount();
-}
-
-// Update the displayed number of test cases.
-function updateTestCaseCount() {
-    if (!testCasesContainer || !testCaseCount) return;
-
-    const count =
-        testCasesContainer.querySelectorAll(".test-case-item").length;
-
-    testCaseCount.textContent =
-        `${count} test case${count === 1 ? "" : "s"}`;
-}
-
-// Collect and validate test cases.
-function collectTestCases() {
-    if (!testCasesContainer) {
-        throw new Error("Test cases section was not found.");
-    }
-
-    const items =
-        testCasesContainer.querySelectorAll(".test-case-item");
-
-    const cases = [];
-
-    items.forEach((item, index) => {
-        const input =
-            item.querySelector(".test-input").value;
-
-        const expectedOutput =
-            item.querySelector(".test-output").value;
-
-        if (!expectedOutput.trim()) {
-            throw new Error(
-                `Enter the expected output for Test Case ${index + 1}.`
-            );
-        }
-
-        cases.push({
-            input: input,
-            expectedOutput: expectedOutput
-        });
-    });
-
-    if (cases.length === 0) {
-        throw new Error("Add at least one test case.");
-    }
-
-    return cases;
-}
-
-// Add Test Case button.
-if (addTestCaseBtn && testCasesContainer) {
-    addTestCaseBtn.addEventListener("click", () => {
-        addTestCase();
-
-        if (testCaseMessage) {
-            testCaseMessage.textContent = "";
-        }
-    });
-}
-
-// Save Test Cases button.
-// This validates the cases and keeps them ready for room creation.
-// The cases are persisted to Firestore when Create Room is clicked.
-if (saveTestCasesBtn && testCasesContainer) {
-    saveTestCasesBtn.addEventListener("click", () => {
-        try {
-            const testCases = collectTestCases();
-
-            window.codeGuardTestCases = testCases;
-
-            if (testCaseMessage) {
-                testCaseMessage.textContent =
-                    `${testCases.length} test cases validated successfully.`;
-            }
-
-            console.log("Validated test cases:", testCases);
-
-        } catch (error) {
-            if (testCaseMessage) {
-                testCaseMessage.textContent = error.message;
-            }
-        }
-    });
-}
-
 
 window.showSubmissionsPage = async function () {
     stopRoomListeners();
@@ -1366,28 +1362,11 @@ window.showSubmissionDetails = async function (submission) {
 
     addText("h4", "Room Rubric");
 
-    const rubric = roomData?.rubric ?? roomData?.rubrics;
+    const rubricItems = getRubricItems(roomData);
 
-    if (typeof rubric === "string") {
-        addText("p", rubric);
-    } else if (rubric && typeof rubric === "object") {
-        Object.entries(rubric).forEach(([key, value]) => {
-            const description =
-                typeof value === "object" && value !== null
-                    ? JSON.stringify(value)
-                    : String(value);
-
-            addText(
-                "p",
-                `${key}: ${description}`
-            );
-        });
-    } else {
-        addText(
-            "p",
-            "No rubric details were found for this room. Using the default grading criteria below."
-        );
-    }
+    rubricItems.forEach((item) => {
+        addText("p", `${item.title}: ${formatPercent(item.percent)}%`);
+    });
 
     // Correctness is calculated from the automated tests.
     const correctnessPercent =
@@ -1398,12 +1377,15 @@ window.showSubmissionDetails = async function (submission) {
                 : 0
         );
 
-    const weights = {
-        correctness: 50,
-        codeQuality: 25,
-        efficiency: 15,
-        style: 10
-    };
+    const correctnessItem =
+        rubricItems.find((item) => isCorrectness(item.title)) ||
+        { title: "Correctness", percent: 0 };
+
+    const gradedItems = rubricItems.filter(
+        (item) => !isCorrectness(item.title)
+    );
+
+    const weights = { correctness: Number(correctnessItem.percent) || 0 };
 
     const correctnessPoints =
         (correctnessPercent / 100) * weights.correctness;
@@ -1492,36 +1474,35 @@ window.showSubmissionDetails = async function (submission) {
         "Enter a score from 0 to 100 for each criterion. Each score is weighted automatically."
     );
 
-    const qualityInput = addScoreInput(
-        "gradeCodeQuality",
-        "Code Quality (25% weight)",
-        submission.codeQualityScore
-    );
+    const scoreInputs = gradedItems.map((item, index) => ({
+        item,
+        input: addScoreInput(
+            `gradeRubric${index}`,
+            `${item.title} (${formatPercent(item.percent)}% weight)`,
+            savedScoreFor(submission, item.title)
+        )
+    }));
 
-    const efficiencyInput = addScoreInput(
-        "gradeEfficiency",
-        "Efficiency (15% weight)",
-        submission.efficiencyScore
-    );
-
-    const styleInput = addScoreInput(
-        "gradeStyle",
-        "Style (10% weight)",
-        submission.styleScore
-    );
+    if (gradedItems.length === 0) {
+        addText(
+            "p",
+            "This room only has the Correctness rubric, so the grade comes from the test results."
+        );
+    }
 
     const gradePreview = addText("h3", "Final Grade: —");
 
     const calculateGrade = () => {
-        const quality = Number(qualityInput.value);
-        const efficiency = Number(efficiencyInput.value);
-        const style = Number(styleInput.value);
-
-        const values = [quality, efficiency, style];
+        const scores = scoreInputs.map(({ item, input }) => ({
+            item,
+            score: Number(input.value),
+            empty: input.value === ""
+        }));
 
         if (
-            values.some(
-                (value) => !Number.isFinite(value) || value < 0 || value > 100
+            scores.some(
+                ({ score, empty }) =>
+                    empty || !Number.isFinite(score) || score < 0 || score > 100
             )
         ) {
             gradePreview.textContent =
@@ -1529,28 +1510,27 @@ window.showSubmissionDetails = async function (submission) {
             return null;
         }
 
-        const qualityPoints = quality * weights.codeQuality / 100;
-        const efficiencyPoints = efficiency * weights.efficiency / 100;
-        const stylePoints = style * weights.style / 100;
+        const rubricScores = scores.map(({ item, score }) => ({
+            title: item.title,
+            percent: Number(item.percent),
+            score,
+            points: Number((score * item.percent / 100).toFixed(2))
+        }));
 
         const finalGrade =
             correctnessPoints +
-            qualityPoints +
-            efficiencyPoints +
-            stylePoints;
+            rubricScores.reduce((sum, entry) => sum + entry.points, 0);
 
         gradePreview.textContent =
             `Final Grade: ${finalGrade.toFixed(2)} / 100`;
 
         return {
-            quality,
-            efficiency,
-            style,
+            rubricScores,
             finalGrade: Number(finalGrade.toFixed(2))
         };
     };
 
-    [qualityInput, efficiencyInput, styleInput].forEach((input) => {
+    scoreInputs.forEach(({ input }) => {
         input.addEventListener("input", calculateGrade);
     });
 
@@ -1584,6 +1564,14 @@ window.showSubmissionDetails = async function (submission) {
                         ? "Satisfactory"
                         : "Needs Improvement";
 
+        // Older submissions kept fixed fields for these three criteria.
+        const scoreFields = {};
+
+        scores.rubricScores.forEach((entry) => {
+            const field = legacyScoreField(entry.title);
+            if (field) scoreFields[field] = entry.score;
+        });
+
         try {
             saveButton.disabled = true;
             saveButton.textContent = "Saving...";
@@ -1591,11 +1579,10 @@ window.showSubmissionDetails = async function (submission) {
             await updateDoc(
                 doc(db, "submissions", submission.id),
                 {
+                    ...scoreFields,
                     correctnessScore: Number(correctnessPercent.toFixed(2)),
                     correctnessPoints: Number(correctnessPoints.toFixed(2)),
-                    codeQualityScore: scores.quality,
-                    efficiencyScore: scores.efficiency,
-                    styleScore: scores.style,
+                    rubricScores: scores.rubricScores,
                     finalGrade: scores.finalGrade,
                     classification,
                     gradingStatus: "GRADED",
@@ -1604,11 +1591,9 @@ window.showSubmissionDetails = async function (submission) {
                 }
             );
 
-            Object.assign(submission, {
+            Object.assign(submission, scoreFields, {
                 correctnessScore: Number(correctnessPercent.toFixed(2)),
-                codeQualityScore: scores.quality,
-                efficiencyScore: scores.efficiency,
-                styleScore: scores.style,
+                rubricScores: scores.rubricScores,
                 finalGrade: scores.finalGrade,
                 classification,
                 gradingStatus: "GRADED"

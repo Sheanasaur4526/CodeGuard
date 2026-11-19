@@ -44,75 +44,6 @@
 
             <div class="grid">
 
-                <!-- CREATE ACTIVITY -->
-                <div class="card">
-                    <h2>Create Activity</h2>
-
-                    <textarea
-                        id="activityInput"
-                        placeholder="Enter activity instructions..."
-                    ></textarea>
-
-                    <button type="button">
-                        Add Activity
-                    </button>
-                </div>
-
-                <!-- RUBRICS -->
-                <div class="card">
-                    <h2>Rubrics</h2>
-
-                    <input id="rubric1" placeholder="Correctness">
-                    <input id="rubric2" placeholder="Code Quality">
-                    <input id="rubric3" placeholder="Efficiency">
-                    <input id="rubric4" placeholder="Style">
-
-                    <button type="button">
-                        Save Rubric
-                    </button>
-                </div>
-
-                <!-- LIVE SUBMISSIONS -->
-                <div class="card">
-                    <h2>Live Submissions</h2>
-
-                    <div class="submission-box">
-                        Student submissions will appear here...
-                    </div>
-                </div>
-
-                <!-- TEST CASE EDITOR -->
-                <div class="card test-cases-card">
-
-                    <div class="test-case-header">
-                        <div>
-                            <h2>Test Cases</h2>
-                        </div>
-
-                        <span id="testCaseCount">0 test cases</span>
-                    </div>
-
-                    <div
-                        id="testCasesContainer"
-                        class="test-cases-container"
-                    >
-                        <!-- Test cases are added dynamically -->
-                    </div>
-
-                    <div class="test-case-actions">
-                        <button type="button" id="addTestCaseBtn">
-                            + Add Test Case
-                        </button>
-
-                        <button type="button" id="saveTestCasesBtn">
-                            Save Test Cases
-                        </button>
-                    </div>
-
-                    <p id="testCaseMessage" role="status"></p>
-
-                </div>
-
                 <!-- CREATE ROOM -->
                 <div class="card create-room">
 
@@ -222,9 +153,16 @@
                 <div class="card">
                     <h2>Activity</h2>
 
-                    <div id="activityDetails">
-                        No activity available.
-                    </div>
+                    <textarea
+                        id="roomActivityInput"
+                        placeholder="Enter activity instructions..."
+                    ></textarea>
+
+                    <button type="button" id="roomSaveActivityBtn">
+                        Save Changes
+                    </button>
+
+                    <p id="roomActivityMessage" role="status"></p>
                 </div>
 
                 <!-- SAVED TEST CASES -->
@@ -242,12 +180,20 @@
                 <div class="card">
                     <h2>Rubrics</h2>
 
-                    <div id="rubricDetails">
-                        <p>Correctness: -</p>
-                        <p>Code Quality: -</p>
-                        <p>Efficiency: -</p>
-                        <p>Style: -</p>
+                    <div id="roomRubricEditor"></div>
+
+                    <p id="roomRubricTotal" role="status"></p>
+
+                    <div class="room-rubric-actions">
+                        <button type="button" id="roomAddRubricBtn">
+                            + Add Rubric
+                        </button>
+                        <button type="button" id="roomSaveRubricBtn">
+                            Save Changes
+                        </button>
                     </div>
+
+                    <p id="roomRubricMessage" role="status"></p>
                 </div>
 
                 <!-- STUDENTS -->
